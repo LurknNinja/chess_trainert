@@ -71,8 +71,11 @@ export default function Endgames() {
     const playerTurn = endgame.color === 'white' ? 'w' : 'b'
     if (game.turn() !== playerTurn) return false
     const g = new Chess(game.fen())
-    const move = g.move({ from, to, promotion: 'q' })
-    if (!move) return false
+    try {
+      g.move({ from, to, promotion: 'q' })
+    } catch {
+      return false
+    }
     setGame(g)
     setMoveCount(c => c + 1)
     setStatusMsg(computeStatus(g))

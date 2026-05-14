@@ -74,8 +74,11 @@ export default function Engine() {
     const engineColor = playerColor === 'white' ? 'b' : 'w'
     if (game.turn() === engineColor) return false
     const g = new Chess(game.fen())
-    const move = g.move({ from, to, promotion: 'q' })
-    if (!move) return false
+    try {
+      g.move({ from, to, promotion: 'q' })
+    } catch {
+      return false
+    }
     setGame(g)
     setStatusMsg(computeStatus(g))
     return true

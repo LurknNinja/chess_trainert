@@ -33,9 +33,11 @@ export default function Puzzles() {
     const expected = puzzle.moves[moveIdx]
     const uci = sourceSquare + targetSquare + (piece === 'wP' && targetSquare[1] === '8' ? 'q' : piece === 'bP' && targetSquare[1] === '1' ? 'q' : '')
     const g = new Chess(game.fen())
-
-    const move = g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
-    if (!move) return false
+    try {
+      g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
+    } catch {
+      return false
+    }
 
     if (uci.slice(0, 4) !== expected.slice(0, 4)) {
       setMessage('✗ Wrong move — try again.')
