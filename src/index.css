@@ -1,0 +1,28 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
+}
+button:active { transform: scale(0.97); }
+
+.btn-primary { background: #4f8ef7; color: #fff; }
+.btn-primary:hover { background: #3a7ae0; }
+.btn-success { background: #34c37a; color: #fff; }
+.btn-success:hover { background: #27a865; }
+.btn-danger  { background: #e05454; color: #fff; }
+.btn-danger:hover  { background: #c43c3c; }
+.btn-secondary { background: #3a3a5c; color: #ccc; }
+.btn-secondary:hover { background: #4a4a70; }

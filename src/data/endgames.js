@@ -1,0 +1,42 @@
+export const ENDGAMES = [
+  {
+    id: 'kr-vs-k',
+    name: 'King + Rook vs King',
+    fen: '8/8/8/8/8/3k4/8/R3K3 w - - 0 1',
+    goal: 'Checkmate the bare king.',
+    color: 'white',
+    hint: 'Use the rook to cut off the enemy king, then push it to the edge.',
+  },
+  {
+    id: 'kq-vs-k',
+    name: 'King + Queen vs King',
+    fen: '8/8/8/8/8/3k4/8/Q3K3 w - - 0 1',
+    goal: 'Checkmate the bare king.',
+    color: 'white',
+    hint: 'The queen alone can limit the king. Bring your king to help deliver mate.',
+  },
+  {
+    id: 'kp-vs-k-key-squares',
+    name: 'King + Pawn vs King (Key Squares)',
+    fen: '8/8/8/4k3/4P3/4K3/8/8 w - - 0 1',
+    goal: 'Advance the pawn and promote.',
+    color: 'white',
+    hint: 'Occupy the key squares (c6/d6/e6 for a d-pawn). The king must lead.',
+  },
+  {
+    id: 'opposition',
+    name: 'King Opposition',
+    fen: '8/8/8/3k4/8/3K4/8/8 w - - 0 1',
+    goal: 'Take the opposition and advance.',
+    color: 'white',
+    hint: 'Direct opposition means kings face each other with one square between them. The side NOT to move has the opposition.',
+  },
+  {
+    id: 'lucena',
+    name: 'Lucena Position (Rook Endgame)',
+    fen: '1K6/1P6/8/8/8/5k2/4r3/4R3 w - - 0 1',
+    goal: 'Build a bridge to shelter your king and promote.',
+    color: 'white',
+    hint: 'Build a bridge: bring the rook to the 4th rank, then step the king forward and shield it.',
+  },
+]
