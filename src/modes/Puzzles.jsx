@@ -13,6 +13,7 @@ export default function Puzzles() {
   const [moveIdx, setMoveIdx] = useState(0)
   const [status, setStatus] = useState('idle') // idle | correct | wrong | solved
   const [message, setMessage] = useState('')
+  const [hintLevel, setHintLevel] = useState(0) // 0=none, 1=piece, 2=full move
 
   const puzzle = PUZZLES[idx]
 
@@ -24,6 +25,7 @@ export default function Puzzles() {
     setMoveIdx(0)
     setStatus('idle')
     setMessage('')
+    setHintLevel(0)
     setIdx(i)
   }
 
@@ -42,6 +44,7 @@ export default function Puzzles() {
     }
 
     setGame(g)
+    setHintLevel(0)
     const nextMoveIdx = moveIdx + 1
 
     if (nextMoveIdx >= puzzle.moves.length) {
@@ -65,6 +68,15 @@ export default function Puzzles() {
     return true
   }, [game, moveIdx, puzzle])
 
+  const correctMove = puzzle.moves[moveIdx] || ''
+  const hintSquares = {}
+  if (hintLevel >= 1 && correctMove) {
+    hintSquares[correctMove.slice(0, 2)] = { background: 'rgba(255, 200, 0, 0.55)', borderRadius: '50%' }
+  }
+  if (hintLevel >= 2 && correctMove) {
+    hintSquares[correctMove.slice(2, 4)] = { background: 'rgba(255, 200, 0, 0.35)', borderRadius: '50%' }
+  }
+
   return (
     <div>
       <h2 style={{ marginBottom: 4 }}>Puzzles & Tactics</h2>
@@ -78,6 +90,7 @@ export default function Puzzles() {
             onPieceDrop={onDrop}
             boardOrientation={puzzle.fen.includes(' b ') ? 'black' : 'white'}
             customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
+            customSquareStyles={hintSquares}
           />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
@@ -87,6 +100,13 @@ export default function Puzzles() {
               <p style={{ marginTop: 12, fontWeight: 700, color: status === 'solved' ? '#34c37a' : status === 'wrong' ? '#e05454' : '#4f8ef7' }}>
                 {message}
               </p>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            {status !== 'solved' && hintLevel < 2 && (
+              <button className="btn-secondary" onClick={() => setHintLevel(h => h + 1)}>
+                {hintLevel === 0 ? 'Hint: show piece' : 'Hint: show target'}
+              </button>
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
