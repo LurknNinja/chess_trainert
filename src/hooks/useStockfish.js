@@ -1,14 +1,20 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 
 export function useStockfish() {
   const worker = useRef(null)
   const handlers = useRef([])
+  const [engineError, setEngineError] = useState(null)
 
   useEffect(() => {
-    worker.current = new Worker('/stockfish.js')
-    worker.current.postMessage('uci')
-    worker.current.onmessage = (e) => {
-      handlers.current.forEach(fn => fn(e.data))
+    try {
+      worker.current = new Worker('/stockfish.js')
+      worker.current.onerror = () => setEngineError('Engine failed to load')
+      worker.current.onmessage = (e) => {
+        handlers.current.forEach(fn => fn(e.data))
+      }
+      worker.current.postMessage('uci')
+    } catch {
+      setEngineError('Web Workers not supported')
     }
     return () => worker.current?.terminate()
   }, [])
@@ -22,5 +28,5 @@ export function useStockfish() {
     return () => { handlers.current = handlers.current.filter(h => h !== fn) }
   }, [])
 
-  return { send, onMessage }
+  return { send, onMessage, engineError }
 }

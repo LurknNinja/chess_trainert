@@ -11,7 +11,7 @@ export default function Endgames() {
   const [thinking, setThinking] = useState(false)
   const [showHint, setShowHint] = useState(false)
   const [moveCount, setMoveCount] = useState(0)
-  const { send, onMessage } = useStockfish()
+  const { send, onMessage, engineError } = useStockfish()
   const gameRef = useRef(game)
   gameRef.current = game
   const endgame = ENDGAMES[idx]

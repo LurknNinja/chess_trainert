@@ -20,9 +20,9 @@ export const PUZZLES = [
   },
   {
     id: 4, theme: 'Skewer',
-    fen: '4k3/8/8/8/8/8/4R3/4K3 w - - 0 1',
-    moves: ['e2e8'],
-    description: 'White to move. Find the skewer.',
+    fen: '2k4r/8/8/8/8/8/8/R3K3 w - - 0 1',
+    moves: ['a1a8'],
+    description: 'White to move. Check the king and win the rook behind it.',
   },
   {
     id: 5, theme: 'Discovered Attack',
@@ -32,15 +32,15 @@ export const PUZZLES = [
   },
   {
     id: 6, theme: 'Smothered Mate',
-    fen: '6rk/6pp/8/8/8/8/5PPP/R4RK1 w - - 0 1',
-    moves: ['a1a8'],
-    description: 'White to move. Mate on the back rank.',
+    fen: '6rk/6pp/7N/8/8/8/8/6K1 w - - 0 1',
+    moves: ['h6f7'],
+    description: 'White to move. The king is trapped by its own pieces — deliver smothered mate!',
   },
   {
-    id: 7, theme: 'Queen Sacrifice',
-    fen: '4k3/8/4K3/4Q3/8/8/8/8 w - - 0 1',
-    moves: ['e5e8'],
-    description: 'White to move. Checkmate!',
+    id: 7, theme: 'Checkmate in 1',
+    fen: 'k7/2Q5/K7/8/8/8/8/8 w - - 0 1',
+    moves: ['c7b7'],
+    description: 'White to move. Find the checkmate in one move.',
   },
   {
     id: 8, theme: 'Double Check',

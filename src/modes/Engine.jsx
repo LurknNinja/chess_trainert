@@ -17,9 +17,10 @@ export default function Engine() {
   const [started, setStarted] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
   const [thinking, setThinking] = useState(false)
-  const { send, onMessage } = useStockfish()
+  const { send, onMessage, engineError } = useStockfish()
   const gameRef = useRef(game)
   gameRef.current = game
+  const thinkingTimer = useRef(null)
 
   const computeStatus = useCallback((g) => {
     if (g.isCheckmate()) return g.turn() === 'w' ? '0-1 Black wins by checkmate' : '1-0 White wins by checkmate'
@@ -33,15 +34,20 @@ export default function Engine() {
     setThinking(true)
     send('position fen ' + g.fen())
     send('go depth ' + LEVELS[level].depth)
+    // safety timeout — unblock player if engine never responds
+    clearTimeout(thinkingTimer.current)
+    thinkingTimer.current = setTimeout(() => setThinking(false), 10000)
   }, [send, level])
 
   useEffect(() => {
     const unsub = onMessage((line) => {
       if (line.startsWith('bestmove')) {
+        clearTimeout(thinkingTimer.current)
         const uci = line.split(' ')[1]
-        if (!uci || uci === '(none)') return
+        if (!uci || uci === '(none)') { setThinking(false); return }
         const g = new Chess(gameRef.current.fen())
-        g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' })
+        try { g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
+        catch { setThinking(false); return }
         setGame(g)
         setThinking(false)
         setStatusMsg(computeStatus(g))
@@ -83,6 +89,18 @@ export default function Engine() {
     setStatusMsg(computeStatus(g))
     return true
   }, [game, thinking, playerColor, computeStatus])
+
+  if (engineError) {
+    return (
+      <div>
+        <h2 style={{ marginBottom: 16 }}>Play vs Engine</h2>
+        <div style={{ background: '#3a1a1a', border: '1px solid #e05454', borderRadius: 10, padding: 20 }}>
+          <p style={{ color: '#e05454', fontWeight: 700, marginBottom: 8 }}>Engine unavailable</p>
+          <p style={{ color: '#aaa', fontSize: 13 }}>{engineError}. Try a desktop browser or refresh the page.</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!started) {
     return (
