@@ -76,6 +76,9 @@ export default function Puzzles() {
   if (hintLevel >= 2 && correctMove) {
     hintSquares[correctMove.slice(2, 4)] = { background: 'rgba(255, 200, 0, 0.35)', borderRadius: '50%' }
   }
+  const hintArrow = hintLevel >= 1 && correctMove && status !== 'solved'
+    ? [{ startSquare: correctMove.slice(0, 2), endSquare: correctMove.slice(2, 4), color: 'rgba(255, 200, 0, 0.8)' }]
+    : []
 
   return (
     <div>
@@ -93,6 +96,7 @@ export default function Puzzles() {
               animationDurationInMs: 200,
               boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
               squareStyles: hintSquares,
+              arrows: hintArrow,
             }}
           />
         </div>

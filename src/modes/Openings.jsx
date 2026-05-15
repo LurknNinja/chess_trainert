@@ -18,14 +18,17 @@ function buildPositions(opening) {
   return positions
 }
 
+const START_FEN = new Chess().fen()
+
 export default function Openings() {
   const [openingIdx, setOpeningIdx] = useState(0)
   const [positions, setPositions] = useState(() => buildPositions(OPENINGS[0]))
   const [posIdx, setPosIdx] = useState(0)
   const [mode, setMode] = useState('learn') // learn | drill
-  const [drillGame, setDrillGame] = useState(null)
+  const [drillFen, setDrillFen] = useState(START_FEN)
   const [drillStep, setDrillStep] = useState(0)
   const [drillMsg, setDrillMsg] = useState('')
+  const [showArrow, setShowArrow] = useState(false)
 
   const opening = OPENINGS[openingIdx]
 
@@ -35,66 +38,82 @@ export default function Openings() {
     setPositions(buildPositions(o))
     setPosIdx(0)
     setMode('learn')
-    setDrillGame(null)
+    setDrillFen(START_FEN)
     setDrillStep(0)
     setDrillMsg('')
+    setShowArrow(false)
   }
 
   function startDrill() {
     setMode('drill')
-    setDrillGame(new Chess())
+    setDrillFen(new Chess().fen())
     setDrillStep(0)
-    setDrillMsg(`Play move ${Math.ceil(1 / 1)}: ${opening.color === 'white' ? 'You play White' : 'You play Black'}`)
+    setDrillMsg(`You play ${opening.color}. Make your first move!`)
+    setShowArrow(false)
   }
 
-  const onDrillDrop = useCallback((from, to) => {
-    if (!drillGame) return false
+  const onDrillDrop = useCallback(({ sourceSquare, targetSquare }) => {
+    if (drillStep >= opening.moves.length) return false
     const expected = opening.moves[drillStep]
-    const uci = from + to
+    const uci = sourceSquare + targetSquare
     if (uci !== expected.slice(0, 4)) {
-      setDrillMsg(`✗ Wrong! Expected ${expected}. Try again.`)
+      setDrillMsg(`✗ Wrong! Expected ${expected.slice(0, 2)}→${expected.slice(2, 4)}. Try again.`)
       return false
     }
-    const g = new Chess(drillGame.fen())
-    g.move(uciToMove(expected))
+    const g = new Chess(drillFen)
+    try { g.move(uciToMove(expected)) } catch { return false }
     const nextStep = drillStep + 1
 
     if (nextStep >= opening.moves.length) {
-      setDrillGame(g)
+      setDrillFen(g.fen())
       setDrillStep(nextStep)
       setDrillMsg('✓ Opening complete! Well done.')
+      setShowArrow(false)
       return true
     }
 
-    // Play next move automatically if it's the "other" side
-    const playerColor = opening.color
-    const playerTurn = playerColor === 'white' ? 'w' : 'b'
-    const afterTurn = g.turn()
+    const playerTurn = opening.color === 'white' ? 'w' : 'b'
+    const newFen = g.fen()
+    setShowArrow(false)
 
-    setDrillGame(g)
-    setDrillStep(nextStep)
-
-    if (afterTurn !== playerTurn) {
-      // Play opponent's move
+    if (g.turn() !== playerTurn) {
+      // Play opponent move automatically
+      const opponentUci = opening.moves[nextStep]
+      setDrillFen(newFen)
+      setDrillStep(nextStep)
+      setDrillMsg('✓ Correct!')
       setTimeout(() => {
-        const opponentUci = opening.moves[nextStep]
-        const g2 = new Chess(g.fen())
-        g2.move(uciToMove(opponentUci))
-        setDrillGame(g2)
-        setDrillStep(nextStep + 1)
-        if (nextStep + 1 >= opening.moves.length) {
+        const g2 = new Chess(newFen)
+        try { g2.move(uciToMove(opponentUci)) } catch { return }
+        const afterStep = nextStep + 1
+        setDrillFen(g2.fen())
+        setDrillStep(afterStep)
+        if (afterStep >= opening.moves.length) {
           setDrillMsg('✓ Opening complete! Well done.')
         } else {
-          setDrillMsg(`✓ Correct! Now play move ${Math.floor((nextStep + 1) / 2) + 1}...`)
+          setDrillMsg('✓ Correct! Continue the line…')
         }
       }, 500)
     } else {
-      setDrillMsg(`✓ Correct! Continue…`)
+      setDrillFen(newFen)
+      setDrillStep(nextStep)
+      setDrillMsg('✓ Correct! Continue…')
     }
     return true
-  }, [drillGame, drillStep, opening])
+  }, [drillFen, drillStep, opening])
 
-  if (mode === 'drill' && drillGame) {
+  // Arrow for learn mode: show next move from current position
+  const learnArrow = posIdx < positions.length - 1 && opening.moves[posIdx]
+    ? [{ startSquare: opening.moves[posIdx].slice(0, 2), endSquare: opening.moves[posIdx].slice(2, 4), color: '#4f8ef7' }]
+    : []
+
+  // Arrow for drill mode: show hint when requested
+  const drillArrow = showArrow && drillStep < opening.moves.length
+    ? [{ startSquare: opening.moves[drillStep].slice(0, 2), endSquare: opening.moves[drillStep].slice(2, 4), color: '#f0c040' }]
+    : []
+
+  if (mode === 'drill') {
+    const isDone = drillStep >= opening.moves.length
     return (
       <div>
         <h2 style={{ marginBottom: 4 }}>Opening Trainer · Drill</h2>
@@ -102,11 +121,15 @@ export default function Openings() {
         <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
           <div style={{ width: 480, maxWidth: '100%' }}>
             <Chessboard
-              position={drillGame.fen()}
-              onPieceDrop={onDrillDrop}
-              boardOrientation={opening.color}
-              customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
-              arePiecesDraggable={drillStep < opening.moves.length}
+              options={{
+                position: drillFen,
+                onPieceDrop: onDrillDrop,
+                boardOrientation: opening.color,
+                animationDurationInMs: 200,
+                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+                allowDragging: !isDone,
+                arrows: drillArrow,
+              }}
             />
           </div>
           <div style={{ flex: 1, minWidth: 180 }}>
@@ -116,9 +139,14 @@ export default function Openings() {
                 Step {Math.min(drillStep, opening.moves.length)} / {opening.moves.length}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" onClick={startDrill}>Restart Drill</button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn-secondary" onClick={startDrill}>Restart</button>
               <button className="btn-secondary" onClick={() => setMode('learn')}>Back to Learn</button>
+              {!isDone && (
+                <button className="btn-secondary" onClick={() => setShowArrow(h => !h)}>
+                  {showArrow ? 'Hide Hint' : 'Hint'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -141,10 +169,14 @@ export default function Openings() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={positions[posIdx]?.fen}
-            boardOrientation={opening.color}
-            customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
-            arePiecesDraggable={false}
+            options={{
+              position: positions[posIdx]?.fen,
+              boardOrientation: opening.color,
+              animationDurationInMs: 200,
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              allowDragging: false,
+              arrows: learnArrow,
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
