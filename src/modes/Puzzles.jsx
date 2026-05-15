@@ -8,6 +8,13 @@ function uciToMove(uci) {
   return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }
 }
 
+function isLegalUci(fen, uci) {
+  try {
+    new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' })
+    return true
+  } catch { return false }
+}
+
 async function fetchLichessDaily() {
   try {
     const res = await fetch('https://lichess.org/api/puzzle/daily', {
@@ -17,8 +24,8 @@ async function fetchLichessDaily() {
     const data = await res.json()
     const { puzzle, game } = data
 
-    // Load the full game, then replay exactly initialPly half-moves using
-    // verbose (from/to) format — more robust than re-parsing SAN strings
+    if (!puzzle.solution?.length) return null
+
     const full = new Chess()
     full.loadPgn(game.pgn)
     const verboseMoves = full.history({ verbose: true })
@@ -30,10 +37,25 @@ async function fetchLichessDaily() {
       g.move({ from: m.from, to: m.to, promotion: m.promotion })
     }
 
+    const sol0 = puzzle.solution[0]
+    let finalFen = g.fen()
+
+    if (!isLegalUci(finalFen, sol0)) {
+      // Some Lichess puzzles: initialPly is one short — advance one more move
+      if (verboseMoves.length > puzzle.initialPly) {
+        const extra = verboseMoves[puzzle.initialPly]
+        g.move({ from: extra.from, to: extra.to, promotion: extra.promotion })
+        finalFen = g.fen()
+        if (!isLegalUci(finalFen, sol0)) return null
+      } else {
+        return null
+      }
+    }
+
     return {
       id: 'lichess-daily',
       theme: (puzzle.themes?.[0] ?? 'tactics').replace(/([A-Z])/g, ' $1').trim(),
-      fen: g.fen(),
+      fen: finalFen,
       moves: puzzle.solution,
       description: `Lichess Daily Puzzle · ${puzzle.rating ?? '?'} rating`,
       daily: true,
@@ -137,8 +159,9 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
   const onDrop = useCallback(({ sourceSquare, targetSquare, piece }) => {
     if (!puzzle) return false
     const expected = puzzle.moves[moveIdx]
-    const pieceType = piece?.pieceType ?? ''
-    const uci = sourceSquare + targetSquare + (pieceType === 'wP' && targetSquare[1] === '8' ? 'q' : pieceType === 'bP' && targetSquare[1] === '1' ? 'q' : '')
+    if (!expected) return false
+    // piece is a plain string like 'wP' in react-chessboard v5
+    const uci = sourceSquare + targetSquare + (piece === 'wP' && targetSquare[1] === '8' ? 'q' : piece === 'bP' && targetSquare[1] === '1' ? 'q' : '')
     const g = new Chess(fen)
     try {
       g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
