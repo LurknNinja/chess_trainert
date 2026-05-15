@@ -10,11 +10,13 @@ export default function Endgames() {
   const [statusMsg, setStatusMsg] = useState('')
   const [thinking, setThinking] = useState(false)
   const [showHint, setShowHint] = useState(false)
+  const [hintArrow, setHintArrow] = useState([])
   const [moveCount, setMoveCount] = useState(0)
   const { send, onMessage, engineError } = useStockfish()
   const fenRef = useRef(fen)
   fenRef.current = fen
   const thinkingTimer = useRef(null)
+  const hintModeRef = useRef(false)
   const endgame = ENDGAMES[idx]
 
   function loadEndgame(i) {
@@ -23,7 +25,9 @@ export default function Endgames() {
     setStatusMsg('')
     setThinking(false)
     setShowHint(false)
+    setHintArrow([])
     setMoveCount(0)
+    hintModeRef.current = false
   }
 
   const computeStatus = useCallback((g) => {
@@ -43,12 +47,47 @@ export default function Endgames() {
     thinkingTimer.current = setTimeout(() => setThinking(false), 10000)
   }, [send])
 
+  function requestHintArrow() {
+    const g = new Chess(fenRef.current)
+    if (g.isGameOver()) return
+    const playerTurn = endgame.color === 'white' ? 'w' : 'b'
+    if (g.turn() !== playerTurn) return
+    hintModeRef.current = true
+    setThinking(true)
+    send('position fen ' + fenRef.current)
+    send('go depth 10')
+    clearTimeout(thinkingTimer.current)
+    thinkingTimer.current = setTimeout(() => {
+      hintModeRef.current = false
+      setThinking(false)
+    }, 10000)
+  }
+
+  function toggleHint() {
+    const next = !showHint
+    setShowHint(next)
+    if (next) {
+      setHintArrow([])
+      requestHintArrow()
+    } else {
+      setHintArrow([])
+    }
+  }
+
   useEffect(() => {
     const unsub = onMessage((line) => {
       if (line.startsWith('bestmove')) {
         clearTimeout(thinkingTimer.current)
         const uci = line.split(' ')[1]
         if (!uci || uci === '(none)') { setThinking(false); return }
+
+        if (hintModeRef.current) {
+          hintModeRef.current = false
+          setHintArrow([{ startSquare: uci.slice(0, 2), endSquare: uci.slice(2, 4), color: '#f0c040' }])
+          setThinking(false)
+          return
+        }
+
         const g = new Chess(fenRef.current)
         try { g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
         catch { setThinking(false); return }
@@ -77,6 +116,7 @@ export default function Endgames() {
     setFen(g.fen())
     setMoveCount(c => c + 1)
     setStatusMsg(computeStatus(g))
+    setHintArrow([])
     return true
   }, [fen, thinking, endgame.color, computeStatus])
 
@@ -104,6 +144,7 @@ export default function Endgames() {
               animationDurationInMs: 200,
               boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
               allowDragging: !thinking && !game.isGameOver(),
+              arrows: hintArrow,
             }}
           />
         </div>
@@ -126,7 +167,7 @@ export default function Endgames() {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => loadEndgame(idx)}>Reset</button>
-            <button className="btn-secondary" onClick={() => setShowHint(h => !h)}>
+            <button className="btn-secondary" onClick={toggleHint}>
               {showHint ? 'Hide Hint' : 'Hint'}
             </button>
           </div>
