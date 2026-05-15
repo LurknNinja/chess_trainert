@@ -81,12 +81,12 @@ export default function Engine() {
     if (playerColor === 'black') setTimeout(() => engineMove(newFen), 300)
   }
 
-  const onDrop = useCallback((from, to) => {
+  const onDrop = useCallback(({ sourceSquare, targetSquare }) => {
     if (thinking) return false
     const g = gameFromFen(fen)
     const engineColor = playerColor === 'white' ? 'b' : 'w'
     if (g.turn() === engineColor) return false
-    try { g.move({ from, to, promotion: 'q' }) } catch { return false }
+    try { g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
     setFen(g.fen())
     setHistory(g.history())
     setStatusMsg(computeStatus(g))

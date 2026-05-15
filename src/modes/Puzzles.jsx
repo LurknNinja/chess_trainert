@@ -26,9 +26,10 @@ export default function Puzzles() {
     setHintLevel(0)
   }
 
-  const onDrop = useCallback((sourceSquare, targetSquare, piece) => {
+  const onDrop = useCallback(({ sourceSquare, targetSquare, piece }) => {
     const expected = puzzle.moves[moveIdx]
-    const uci = sourceSquare + targetSquare + (piece === 'wP' && targetSquare[1] === '8' ? 'q' : piece === 'bP' && targetSquare[1] === '1' ? 'q' : '')
+    const pieceType = piece?.pieceType ?? ''
+    const uci = sourceSquare + targetSquare + (pieceType === 'wP' && targetSquare[1] === '8' ? 'q' : pieceType === 'bP' && targetSquare[1] === '1' ? 'q' : '')
     const g = new Chess(fen)
     try {
       g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })

@@ -67,13 +67,13 @@ export default function Endgames() {
     if (g.turn() !== playerTurn) setTimeout(() => engineMove(fen), 400)
   }, [fen, endgame.color, engineMove])
 
-  const onDrop = useCallback((from, to) => {
+  const onDrop = useCallback(({ sourceSquare, targetSquare }) => {
     if (thinking) return false
     const g = new Chess(fen)
     if (g.isGameOver()) return false
     const playerTurn = endgame.color === 'white' ? 'w' : 'b'
     if (g.turn() !== playerTurn) return false
-    try { g.move({ from, to, promotion: 'q' }) } catch { return false }
+    try { g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
     setFen(g.fen())
     setMoveCount(c => c + 1)
     setStatusMsg(computeStatus(g))
