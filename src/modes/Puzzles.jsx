@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { PUZZLES as LOCAL_PUZZLES } from '../data/puzzles.js'
+import { recordAttempt, getStats } from '../hooks/useStats.js'
 
 function uciToMove(uci) {
   return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }
@@ -15,14 +16,11 @@ async function fetchLichessDaily() {
     if (!res.ok) return null
     const data = await res.json()
     const { puzzle, game } = data
-
-    // Replay PGN up to initialPly to get the starting FEN
     const full = new Chess()
     full.loadPgn(game.pgn)
     const allMoves = full.history()
     const g = new Chess()
     for (let i = 0; i < puzzle.initialPly; i++) g.move(allMoves[i])
-
     return {
       id: 'lichess-daily',
       theme: (puzzle.themes?.[0] ?? 'tactics').replace(/([A-Z])/g, ' $1').trim(),
@@ -36,15 +34,34 @@ async function fetchLichessDaily() {
   }
 }
 
-export default function Puzzles() {
+function getWeakThemes(threshold = 0.6) {
+  const { themeStats } = getStats()
+  return Object.entries(themeStats)
+    .filter(([, s]) => s.attempts > 0 && s.solved / s.attempts < threshold)
+    .sort(([, a], [, b]) => (a.solved / a.attempts) - (b.solved / b.attempts))
+    .map(([theme]) => theme)
+}
+
+export default function Puzzles({ onNav, initialTrainMode = false }) {
   const [puzzles, setPuzzles] = useState(LOCAL_PUZZLES)
-  const [dailyStatus, setDailyStatus] = useState('loading') // loading | ok | error
+  const [dailyStatus, setDailyStatus] = useState('loading')
   const [idx, setIdx] = useState(0)
   const [fen, setFen] = useState(LOCAL_PUZZLES[0].fen)
   const [moveIdx, setMoveIdx] = useState(0)
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
   const [hintLevel, setHintLevel] = useState(0)
+  const [trainMode, setTrainMode] = useState(initialTrainMode)
+
+  // Per-puzzle session tracking (refs so they don't trigger re-renders)
+  const hadWrongMove = useRef(false)
+  const hintsUsedCount = useRef(0)
+  const attemptFired = useRef(false)
+  // Keep current index/puzzle accessible in callbacks without stale closures
+  const idxRef = useRef(idx)
+  idxRef.current = idx
+  const puzzlesRef = useRef(puzzles)
+  puzzlesRef.current = puzzles
 
   useEffect(() => {
     fetchLichessDaily().then(p => {
@@ -59,19 +76,54 @@ export default function Puzzles() {
 
   const puzzle = puzzles[idx]
 
-  function loadPuzzle(i, list = puzzles) {
+  function fireAttempt(theme, solved) {
+    if (attemptFired.current || !theme) return
+    recordAttempt(theme, { solved, firstTry: !hadWrongMove.current, hintsUsed: hintsUsedCount.current })
+    attemptFired.current = true
+  }
+
+  function loadPuzzle(i, list) {
+    const allPuzzles = list ?? puzzlesRef.current
+    const isReset = i === idxRef.current && !list
+    // Record outgoing attempt as failed if user made at least one wrong move but didn't solve
+    if (!isReset && !attemptFired.current && hadWrongMove.current) {
+      fireAttempt(allPuzzles[idxRef.current]?.theme, false)
+    }
+    hadWrongMove.current = false
+    hintsUsedCount.current = 0
+    attemptFired.current = false
     setIdx(i)
-    setFen(list[i].fen)
+    setFen(allPuzzles[i].fen)
     setMoveIdx(0)
     setStatus('idle')
     setMessage('')
     setHintLevel(0)
   }
 
-  // When daily puzzle loads, it's prepended — shift idx if user hasn't moved yet
   useEffect(() => {
-    if (dailyStatus === 'ok' && idx === 0) loadPuzzle(0, puzzles)
+    if (dailyStatus === 'ok') loadPuzzle(0, puzzles)
   }, [dailyStatus]) // eslint-disable-line
+
+  function pickNext() {
+    const allPuzzles = puzzlesRef.current
+    if (!trainMode) {
+      const next = Math.min(idxRef.current + 1, allPuzzles.length - 1)
+      loadPuzzle(next)
+      return
+    }
+    const weak = getWeakThemes(0.6)
+    const pool = weak.length
+      ? allPuzzles.filter(p => !p.daily && weak.includes(p.theme))
+      : allPuzzles
+    const candidates = pool.length ? pool : allPuzzles
+    const byTheme = {}
+    candidates.forEach(p => { (byTheme[p.theme] ??= []).push(p) })
+    const targetTheme = weak.find(t => byTheme[t]?.length) ?? candidates[0].theme
+    const group = byTheme[targetTheme] ?? candidates
+    const next = group[Math.floor(Math.random() * group.length)]
+    const nextIdx = allPuzzles.indexOf(next)
+    loadPuzzle(nextIdx !== -1 ? nextIdx : 0)
+  }
 
   const onDrop = useCallback(({ sourceSquare, targetSquare, piece }) => {
     if (!puzzle) return false
@@ -86,6 +138,7 @@ export default function Puzzles() {
     }
 
     if (uci.slice(0, 4) !== expected.slice(0, 4)) {
+      hadWrongMove.current = true
       setMessage('✗ Wrong move — try again.')
       setStatus('wrong')
       return false
@@ -99,6 +152,7 @@ export default function Puzzles() {
     if (nextMoveIdx >= puzzle.moves.length) {
       setStatus('solved')
       setMessage('✓ Puzzle solved!')
+      fireAttempt(puzzle.theme, true)
       return true
     }
 
@@ -133,7 +187,14 @@ export default function Puzzles() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>Puzzles & Tactics</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0 }}>Puzzles &amp; Tactics</h2>
+        {trainMode && (
+          <span style={{ fontSize: 11, background: '#1a3a1a', color: '#34c37a', border: '1px solid #34c37a55', borderRadius: 4, padding: '2px 8px', fontWeight: 700 }}>
+            ⚡ WEAKNESS FOCUS
+          </span>
+        )}
+      </div>
       <p style={{ color: '#888', marginBottom: 20, fontSize: 14 }}>
         {puzzle.daily
           ? <span style={{ color: '#f0c040' }}>★ Daily Puzzle</span>
@@ -167,21 +228,37 @@ export default function Puzzles() {
               </p>
             )}
           </div>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
             {status !== 'solved' && hintLevel < 2 && (
-              <button className="btn-secondary" onClick={() => setHintLevel(h => h + 1)}>
+              <button className="btn-secondary" onClick={() => { setHintLevel(h => h + 1); hintsUsedCount.current += 1 }}>
                 {hintLevel === 0 ? 'Hint: show piece' : 'Hint: show target'}
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             <button className="btn-secondary" onClick={() => loadPuzzle(idx)}>Reset</button>
             {idx > 0 && <button className="btn-secondary" onClick={() => loadPuzzle(idx - 1)}>← Prev</button>}
-            {idx < puzzles.length - 1 && (
-              <button className="btn-primary" onClick={() => loadPuzzle(idx + 1)}>Next →</button>
-            )}
+            <button className="btn-primary" onClick={pickNext} disabled={!trainMode && idx >= puzzles.length - 1}>
+              Next →
+            </button>
           </div>
-          <div style={{ marginTop: 24 }}>
+
+          <button
+            onClick={() => setTrainMode(t => !t)}
+            style={{
+              width: '100%', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              background: trainMode ? '#1a3a1a' : '#2a2a4a',
+              color: trainMode ? '#34c37a' : '#aaa',
+              border: `1px solid ${trainMode ? '#34c37a55' : 'transparent'}`,
+              cursor: 'pointer',
+            }}
+          >
+            {trainMode ? '⚡ Training Weaknesses — click to stop' : 'Train My Weaknesses'}
+          </button>
+
+          <div style={{ marginTop: 20 }}>
             <p style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
               {dailyStatus === 'loading' ? 'Loading daily puzzle…' : `${puzzles.length} puzzles`}
             </p>

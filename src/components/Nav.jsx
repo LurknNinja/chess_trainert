@@ -4,6 +4,7 @@ const LINKS = [
   { id: 'openings', label: 'Openings' },
   { id: 'endgames', label: 'Endgames' },
   { id: 'pieces',   label: 'Pieces' },
+  { id: 'progress', label: 'Progress' },
 ]
 
 export default function Nav({ current, onNav }) {
