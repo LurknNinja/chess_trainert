@@ -5,8 +5,9 @@ import Puzzles from './modes/Puzzles.jsx'
 import Engine from './modes/Engine.jsx'
 import Openings from './modes/Openings.jsx'
 import Endgames from './modes/Endgames.jsx'
+import PieceGuide from './modes/PieceGuide.jsx'
 
-const MODES = { home: Home, puzzles: Puzzles, engine: Engine, openings: Openings, endgames: Endgames }
+const MODES = { home: Home, puzzles: Puzzles, engine: Engine, openings: Openings, endgames: Endgames, pieces: PieceGuide }
 
 export default function App() {
   const [mode, setMode] = useState('home')

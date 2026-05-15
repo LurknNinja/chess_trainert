@@ -1,14 +1,50 @@
 const LINKS = [
-  { id: 'home',     label: '♟ Chess Trainer' },
   { id: 'puzzles',  label: 'Puzzles' },
   { id: 'engine',   label: 'vs Engine' },
   { id: 'openings', label: 'Openings' },
   { id: 'endgames', label: 'Endgames' },
+  { id: 'pieces',   label: 'Pieces' },
 ]
 
 export default function Nav({ current, onNav }) {
   return (
-    <nav style={{ background: '#16213e', borderBottom: '1px solid #2a2a4a', display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', flexWrap: 'wrap' }}>
+    <nav style={{
+      background: '#16213e',
+      borderBottom: '1px solid #2a2a4a',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0,
+      padding: '0 8px',
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
+      WebkitOverflowScrolling: 'touch',
+      flexShrink: 0,
+      minHeight: 52,
+    }}>
+      {/* Logo / home button */}
+      <button
+        onClick={() => onNav('home')}
+        style={{
+          background: 'none',
+          color: current === 'home' ? '#4f8ef7' : '#e0e0e0',
+          borderBottom: current === 'home' ? '2px solid #4f8ef7' : '2px solid transparent',
+          borderRadius: 0,
+          padding: '14px 14px',
+          fontSize: 16,
+          fontWeight: 700,
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          minHeight: 52,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        ♟ Chess Trainer
+      </button>
+
+      {/* Divider */}
+      <div style={{ width: 1, height: 24, background: '#2a2a4a', flexShrink: 0, margin: '0 4px' }} />
+
+      {/* Navigation tabs */}
       {LINKS.map(({ id, label }) => (
         <button
           key={id}
@@ -19,13 +55,20 @@ export default function Nav({ current, onNav }) {
             borderBottom: current === id ? '2px solid #4f8ef7' : '2px solid transparent',
             borderRadius: 0,
             padding: '14px 12px',
-            fontSize: id === 'home' ? 17 : 14,
-            fontWeight: id === 'home' ? 700 : 500,
+            fontSize: 13,
+            fontWeight: current === id ? 700 : 500,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            minHeight: 52,
+            transition: 'color 0.15s',
           }}
         >
           {label}
         </button>
       ))}
+
+      {/* Hide scrollbar for Webkit */}
+      <style>{`nav::-webkit-scrollbar { display: none; }`}</style>
     </nav>
   )
 }
