@@ -6,22 +6,20 @@ import { ENDGAMES } from '../data/endgames.js'
 
 export default function Endgames() {
   const [idx, setIdx] = useState(0)
-  const [game, setGame] = useState(() => { const g = new Chess(); g.load(ENDGAMES[0].fen); return g })
+  const [fen, setFen] = useState(ENDGAMES[0].fen)
   const [statusMsg, setStatusMsg] = useState('')
   const [thinking, setThinking] = useState(false)
   const [showHint, setShowHint] = useState(false)
   const [moveCount, setMoveCount] = useState(0)
   const { send, onMessage, engineError } = useStockfish()
-  const gameRef = useRef(game)
-  gameRef.current = game
+  const fenRef = useRef(fen)
+  fenRef.current = fen
+  const thinkingTimer = useRef(null)
   const endgame = ENDGAMES[idx]
 
   function loadEndgame(i) {
-    const e = ENDGAMES[i]
-    const g = new Chess()
-    g.load(e.fen)
     setIdx(i)
-    setGame(g)
+    setFen(ENDGAMES[i].fen)
     setStatusMsg('')
     setThinking(false)
     setShowHint(false)
@@ -32,24 +30,29 @@ export default function Endgames() {
     if (g.isCheckmate()) return g.turn() === 'w' ? '0-1 Black wins by checkmate!' : '1-0 Checkmate! You won!'
     if (g.isDraw()) return '½-½ Draw'
     if (g.isCheck()) return g.turn() === 'w' ? 'White is in check' : 'Black is in check'
-    return g.turn() === 'w' ? "White to move" : "Black to move"
+    return g.turn() === 'w' ? 'White to move' : 'Black to move'
   }, [])
 
-  const engineMove = useCallback((g) => {
+  const engineMove = useCallback((currentFen) => {
+    const g = new Chess(currentFen)
     if (g.isGameOver()) return
     setThinking(true)
-    send('position fen ' + g.fen())
+    send('position fen ' + currentFen)
     send('go depth 8')
+    clearTimeout(thinkingTimer.current)
+    thinkingTimer.current = setTimeout(() => setThinking(false), 10000)
   }, [send])
 
   useEffect(() => {
     const unsub = onMessage((line) => {
       if (line.startsWith('bestmove')) {
+        clearTimeout(thinkingTimer.current)
         const uci = line.split(' ')[1]
         if (!uci || uci === '(none)') { setThinking(false); return }
-        const g = new Chess(gameRef.current.fen())
-        g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' })
-        setGame(g)
+        const g = new Chess(fenRef.current)
+        try { g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
+        catch { setThinking(false); return }
+        setFen(g.fen())
         setThinking(false)
         setStatusMsg(computeStatus(g))
       }
@@ -57,30 +60,27 @@ export default function Endgames() {
     return unsub
   }, [onMessage, computeStatus])
 
-  // engine plays for opponent color
   useEffect(() => {
-    if (game.isGameOver()) return
+    const g = new Chess(fen)
+    if (g.isGameOver()) return
     const playerTurn = endgame.color === 'white' ? 'w' : 'b'
-    if (game.turn() !== playerTurn) {
-      setTimeout(() => engineMove(game), 400)
-    }
-  }, [game, endgame.color, engineMove])
+    if (g.turn() !== playerTurn) setTimeout(() => engineMove(fen), 400)
+  }, [fen, endgame.color, engineMove])
 
   const onDrop = useCallback((from, to) => {
-    if (thinking || game.isGameOver()) return false
+    if (thinking) return false
+    const g = new Chess(fen)
+    if (g.isGameOver()) return false
     const playerTurn = endgame.color === 'white' ? 'w' : 'b'
-    if (game.turn() !== playerTurn) return false
-    const g = new Chess(game.fen())
-    try {
-      g.move({ from, to, promotion: 'q' })
-    } catch {
-      return false
-    }
-    setGame(g)
+    if (g.turn() !== playerTurn) return false
+    try { g.move({ from, to, promotion: 'q' }) } catch { return false }
+    setFen(g.fen())
     setMoveCount(c => c + 1)
     setStatusMsg(computeStatus(g))
     return true
-  }, [game, thinking, endgame.color, computeStatus])
+  }, [fen, thinking, endgame.color, computeStatus])
+
+  const game = new Chess(fen)
 
   return (
     <div>
@@ -97,9 +97,10 @@ export default function Endgames() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={game.fen()}
+            position={fen}
             onPieceDrop={onDrop}
             boardOrientation={endgame.color}
+            animationDuration={200}
             customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
             arePiecesDraggable={!thinking && !game.isGameOver()}
           />
@@ -127,6 +128,7 @@ export default function Endgames() {
               {showHint ? 'Hide Hint' : 'Hint'}
             </button>
           </div>
+          {engineError && <p style={{ marginTop: 12, color: '#e05454', fontSize: 12 }}>Engine unavailable: {engineError}</p>}
         </div>
       </div>
     </div>

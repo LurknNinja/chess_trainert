@@ -10,17 +10,22 @@ const LEVELS = [
   { label: 'Master',       depth: 18, elo: 2400 },
 ]
 
+const START_FEN = new Chess().fen()
+
 export default function Engine() {
   const [level, setLevel] = useState(1)
   const [playerColor, setPlayerColor] = useState('white')
-  const [game, setGame] = useState(new Chess())
+  const [fen, setFen] = useState(START_FEN)
+  const [history, setHistory] = useState([])
   const [started, setStarted] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
   const [thinking, setThinking] = useState(false)
   const { send, onMessage, engineError } = useStockfish()
-  const gameRef = useRef(game)
-  gameRef.current = game
+  const fenRef = useRef(fen)
+  fenRef.current = fen
   const thinkingTimer = useRef(null)
+
+  const gameFromFen = (f) => new Chess(f)
 
   const computeStatus = useCallback((g) => {
     if (g.isCheckmate()) return g.turn() === 'w' ? '0-1 Black wins by checkmate' : '1-0 White wins by checkmate'
@@ -29,12 +34,12 @@ export default function Engine() {
     return g.turn() === 'w' ? "White's turn" : "Black's turn"
   }, [])
 
-  const engineMove = useCallback((g) => {
+  const engineMove = useCallback((currentFen) => {
+    const g = gameFromFen(currentFen)
     if (g.isGameOver()) return
     setThinking(true)
-    send('position fen ' + g.fen())
+    send('position fen ' + currentFen)
     send('go depth ' + LEVELS[level].depth)
-    // safety timeout — unblock player if engine never responds
     clearTimeout(thinkingTimer.current)
     thinkingTimer.current = setTimeout(() => setThinking(false), 10000)
   }, [send, level])
@@ -45,10 +50,12 @@ export default function Engine() {
         clearTimeout(thinkingTimer.current)
         const uci = line.split(' ')[1]
         if (!uci || uci === '(none)') { setThinking(false); return }
-        const g = new Chess(gameRef.current.fen())
+        const g = new Chess(fenRef.current)
         try { g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
         catch { setThinking(false); return }
-        setGame(g)
+        const newFen = g.fen()
+        setFen(newFen)
+        setHistory(g.history())
         setThinking(false)
         setStatusMsg(computeStatus(g))
       }
@@ -56,39 +63,35 @@ export default function Engine() {
     return unsub
   }, [onMessage, computeStatus])
 
-  // Engine plays immediately if it's its turn
   useEffect(() => {
-    if (!started || game.isGameOver()) return
+    if (!started) return
+    const g = gameFromFen(fen)
+    if (g.isGameOver()) return
     const engineColor = playerColor === 'white' ? 'b' : 'w'
-    if (game.turn() === engineColor) {
-      engineMove(game)
-    }
-  }, [game, started, playerColor, engineMove])
+    if (g.turn() === engineColor) engineMove(fen)
+  }, [fen, started, playerColor, engineMove])
 
   function startGame() {
     const g = new Chess()
-    setGame(g)
+    const newFen = g.fen()
+    setFen(newFen)
+    setHistory([])
     setStarted(true)
     setStatusMsg(computeStatus(g))
-    if (playerColor === 'black') {
-      setTimeout(() => engineMove(g), 300)
-    }
+    if (playerColor === 'black') setTimeout(() => engineMove(newFen), 300)
   }
 
   const onDrop = useCallback((from, to) => {
     if (thinking) return false
+    const g = gameFromFen(fen)
     const engineColor = playerColor === 'white' ? 'b' : 'w'
-    if (game.turn() === engineColor) return false
-    const g = new Chess(game.fen())
-    try {
-      g.move({ from, to, promotion: 'q' })
-    } catch {
-      return false
-    }
-    setGame(g)
+    if (g.turn() === engineColor) return false
+    try { g.move({ from, to, promotion: 'q' }) } catch { return false }
+    setFen(g.fen())
+    setHistory(g.history())
     setStatusMsg(computeStatus(g))
     return true
-  }, [game, thinking, playerColor, computeStatus])
+  }, [fen, thinking, playerColor, computeStatus])
 
   if (engineError) {
     return (
@@ -96,7 +99,7 @@ export default function Engine() {
         <h2 style={{ marginBottom: 16 }}>Play vs Engine</h2>
         <div style={{ background: '#3a1a1a', border: '1px solid #e05454', borderRadius: 10, padding: 20 }}>
           <p style={{ color: '#e05454', fontWeight: 700, marginBottom: 8 }}>Engine unavailable</p>
-          <p style={{ color: '#aaa', fontSize: 13 }}>{engineError}. Try a desktop browser or refresh the page.</p>
+          <p style={{ color: '#aaa', fontSize: 13 }}>{engineError}. Try a desktop browser or refresh.</p>
         </div>
       </div>
     )
@@ -137,6 +140,8 @@ export default function Engine() {
     )
   }
 
+  const game = gameFromFen(fen)
+
   return (
     <div>
       <h2 style={{ marginBottom: 4 }}>Play vs Engine</h2>
@@ -147,9 +152,10 @@ export default function Engine() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={game.fen()}
+            position={fen}
             onPieceDrop={onDrop}
             boardOrientation={playerColor}
+            animationDuration={200}
             customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
             arePiecesDraggable={!thinking && !game.isGameOver()}
           />
@@ -158,16 +164,14 @@ export default function Engine() {
           <div style={{ background: '#16213e', borderRadius: 10, padding: 20, marginBottom: 16 }}>
             <p style={{ fontWeight: 700, marginBottom: 8 }}>{statusMsg}</p>
             <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, color: '#888', fontFamily: 'monospace' }}>
-              {game.history().map((m, i) => (
+              {history.map((m, i) => (
                 <span key={i} style={{ marginRight: 8 }}>
                   {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{m}
                 </span>
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-danger" onClick={() => setStarted(false)}>New Game</button>
-          </div>
+          <button className="btn-danger" onClick={() => { setStarted(false); setFen(START_FEN); setHistory([]) }}>New Game</button>
         </div>
       </div>
     </div>

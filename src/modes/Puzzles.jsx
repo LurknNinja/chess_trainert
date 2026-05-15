@@ -9,30 +9,27 @@ function uciToMove(uci) {
 
 export default function Puzzles() {
   const [idx, setIdx] = useState(0)
-  const [game, setGame] = useState(() => { const g = new Chess(); g.load(PUZZLES[0].fen); return g })
+  const [fen, setFen] = useState(PUZZLES[0].fen)
   const [moveIdx, setMoveIdx] = useState(0)
-  const [status, setStatus] = useState('idle') // idle | correct | wrong | solved
+  const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
-  const [hintLevel, setHintLevel] = useState(0) // 0=none, 1=piece, 2=full move
+  const [hintLevel, setHintLevel] = useState(0)
 
   const puzzle = PUZZLES[idx]
 
   function loadPuzzle(i) {
-    const p = PUZZLES[i]
-    const g = new Chess()
-    g.load(p.fen)
-    setGame(g)
+    setIdx(i)
+    setFen(PUZZLES[i].fen)
     setMoveIdx(0)
     setStatus('idle')
     setMessage('')
     setHintLevel(0)
-    setIdx(i)
   }
 
   const onDrop = useCallback((sourceSquare, targetSquare, piece) => {
     const expected = puzzle.moves[moveIdx]
     const uci = sourceSquare + targetSquare + (piece === 'wP' && targetSquare[1] === '8' ? 'q' : piece === 'bP' && targetSquare[1] === '1' ? 'q' : '')
-    const g = new Chess(game.fen())
+    const g = new Chess(fen)
     try {
       g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
     } catch {
@@ -45,7 +42,8 @@ export default function Puzzles() {
       return false
     }
 
-    setGame(g)
+    const newFen = g.fen()
+    setFen(newFen)
     setHintLevel(0)
     const nextMoveIdx = moveIdx + 1
 
@@ -56,11 +54,10 @@ export default function Puzzles() {
     }
 
     // Play opponent response
-    const opponentUci = puzzle.moves[nextMoveIdx]
     setTimeout(() => {
-      const g2 = new Chess(g.fen())
-      g2.move(uciToMove(opponentUci))
-      setGame(g2)
+      const g2 = new Chess(newFen)
+      g2.move(uciToMove(puzzle.moves[nextMoveIdx]))
+      setFen(g2.fen())
       setMoveIdx(nextMoveIdx + 1)
       setStatus('idle')
       setMessage('')
@@ -68,7 +65,7 @@ export default function Puzzles() {
 
     setMoveIdx(nextMoveIdx)
     return true
-  }, [game, moveIdx, puzzle])
+  }, [fen, moveIdx, puzzle])
 
   const correctMove = puzzle.moves[moveIdx] || ''
   const hintSquares = {}
@@ -88,9 +85,10 @@ export default function Puzzles() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={game.fen()}
+            position={fen}
             onPieceDrop={onDrop}
             boardOrientation={puzzle.fen.includes(' b ') ? 'black' : 'white'}
+            animationDuration={200}
             customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
             customSquareStyles={hintSquares}
           />
@@ -122,16 +120,8 @@ export default function Puzzles() {
             <p style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>All puzzles</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {PUZZLES.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => loadPuzzle(i)}
-                  style={{
-                    padding: '4px 10px', fontSize: 12,
-                    background: i === idx ? '#4f8ef7' : '#2a2a4a',
-                    color: i === idx ? '#fff' : '#aaa',
-                    borderRadius: 4,
-                  }}
-                >
+                <button key={p.id} onClick={() => loadPuzzle(i)}
+                  style={{ padding: '4px 10px', fontSize: 12, background: i === idx ? '#4f8ef7' : '#2a2a4a', color: i === idx ? '#fff' : '#aaa', borderRadius: 4 }}>
                   {i + 1}
                 </button>
               ))}
