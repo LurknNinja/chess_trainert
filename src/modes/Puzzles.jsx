@@ -85,12 +85,14 @@ export default function Puzzles() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={fen}
-            onPieceDrop={onDrop}
-            boardOrientation={puzzle.fen.includes(' b ') ? 'black' : 'white'}
-            animationDuration={200}
-            customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
-            customSquareStyles={hintSquares}
+            options={{
+              position: fen,
+              onPieceDrop: onDrop,
+              boardOrientation: puzzle.fen.includes(' b ') ? 'black' : 'white',
+              animationDurationInMs: 200,
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              squareStyles: hintSquares,
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>

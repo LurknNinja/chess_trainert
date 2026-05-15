@@ -152,12 +152,14 @@ export default function Engine() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard
-            position={fen}
-            onPieceDrop={onDrop}
-            boardOrientation={playerColor}
-            animationDuration={200}
-            customBoardStyle={{ borderRadius: 8, boxShadow: '0 4px 24px #0006' }}
-            arePiecesDraggable={!thinking && !game.isGameOver()}
+            options={{
+              position: fen,
+              onPieceDrop: onDrop,
+              boardOrientation: playerColor,
+              animationDurationInMs: 200,
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              allowDragging: !thinking && !game.isGameOver(),
+            }}
           />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
