@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { useStockfish } from '../hooks/useStockfish.js'
@@ -11,6 +11,34 @@ const LEVELS = [
 ]
 
 const START_FEN = new Chess().fen()
+
+function MoveList({ history }) {
+  const endRef = useRef(null)
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history])
+  const pairs = useMemo(() => {
+    const rows = []
+    for (let i = 0; i < history.length; i += 2)
+      rows.push({ n: Math.floor(i / 2) + 1, w: history[i], b: history[i + 1] })
+    return rows
+  }, [history])
+  if (!pairs.length) return <p style={{ fontSize: 12, color: '#444' }}>No moves yet</p>
+  return (
+    <div style={{ maxHeight: 220, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <tbody>
+          {pairs.map(({ n, w, b }) => (
+            <tr key={n} style={{ borderBottom: '1px solid #1e2a42' }}>
+              <td style={{ color: '#444', paddingRight: 8, userSelect: 'none', width: 28 }}>{n}.</td>
+              <td style={{ color: '#c8d8f0', padding: '3px 8px 3px 0', width: '50%' }}>{w}</td>
+              <td style={{ color: '#c8d8f0', padding: '3px 0' }}>{b ?? ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div ref={endRef} />
+    </div>
+  )
+}
 
 export default function Engine() {
   const [level, setLevel] = useState(1)
@@ -164,14 +192,8 @@ export default function Engine() {
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ background: '#16213e', borderRadius: 10, padding: 20, marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, marginBottom: 8 }}>{statusMsg}</p>
-            <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, color: '#888', fontFamily: 'monospace' }}>
-              {history.map((m, i) => (
-                <span key={i} style={{ marginRight: 8 }}>
-                  {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{m}
-                </span>
-              ))}
-            </div>
+            <p style={{ fontWeight: 700, marginBottom: 12 }}>{statusMsg}</p>
+            <MoveList history={history} />
           </div>
           <button className="btn-danger" onClick={() => { setStarted(false); setFen(START_FEN); setHistory([]) }}>New Game</button>
         </div>
