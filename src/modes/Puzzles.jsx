@@ -16,11 +16,20 @@ async function fetchLichessDaily() {
     if (!res.ok) return null
     const data = await res.json()
     const { puzzle, game } = data
+
+    // Load the full game, then replay exactly initialPly half-moves using
+    // verbose (from/to) format — more robust than re-parsing SAN strings
     const full = new Chess()
     full.loadPgn(game.pgn)
-    const allMoves = full.history()
+    const verboseMoves = full.history({ verbose: true })
+    if (verboseMoves.length < puzzle.initialPly) return null
+
     const g = new Chess()
-    for (let i = 0; i < puzzle.initialPly; i++) g.move(allMoves[i])
+    for (let i = 0; i < puzzle.initialPly; i++) {
+      const m = verboseMoves[i]
+      g.move({ from: m.from, to: m.to, promotion: m.promotion })
+    }
+
     return {
       id: 'lichess-daily',
       theme: (puzzle.themes?.[0] ?? 'tactics').replace(/([A-Z])/g, ' $1').trim(),

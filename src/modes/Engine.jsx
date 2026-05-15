@@ -4,10 +4,10 @@ import { Chessboard } from 'react-chessboard'
 import { useStockfish } from '../hooks/useStockfish.js'
 
 const LEVELS = [
-  { label: 'Beginner',     depth: 1,  elo: 800  },
-  { label: 'Intermediate', depth: 5,  elo: 1200 },
-  { label: 'Advanced',     depth: 10, elo: 1800 },
-  { label: 'Master',       depth: 18, elo: 2400 },
+  { label: 'Beginner',     skill: 0,  movetime: 50,   elo: 800  },
+  { label: 'Intermediate', skill: 5,  movetime: 200,  elo: 1200 },
+  { label: 'Advanced',     skill: 12, movetime: 800,  elo: 1800 },
+  { label: 'Master',       skill: 20, movetime: 2000, elo: 2400 },
 ]
 
 const START_FEN = new Chess().fen()
@@ -66,8 +66,9 @@ export default function Engine() {
     const g = gameFromFen(currentFen)
     if (g.isGameOver()) return
     setThinking(true)
+    send('setoption name Skill Level value ' + LEVELS[level].skill)
     send('position fen ' + currentFen)
-    send('go depth ' + LEVELS[level].depth)
+    send('go movetime ' + LEVELS[level].movetime)
     clearTimeout(thinkingTimer.current)
     thinkingTimer.current = setTimeout(() => setThinking(false), 10000)
   }, [send, level])
