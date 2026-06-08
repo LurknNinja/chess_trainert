@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { isSoundEnabled, setSoundEnabled, sound } from '../utils/sound.js'
+
 const LINKS = [
+  { id: 'learn',    label: 'Learn' },
   { id: 'puzzles',  label: 'Puzzles' },
   { id: 'engine',   label: 'vs Engine' },
   { id: 'openings', label: 'Openings' },
@@ -8,6 +12,15 @@ const LINKS = [
 ]
 
 export default function Nav({ current, onNav }) {
+  const [soundOn, setSoundOn] = useState(isSoundEnabled())
+
+  function toggleSound() {
+    const next = !soundOn
+    setSoundEnabled(next)
+    setSoundOn(next)
+    if (next) sound.click()
+  }
+
   return (
     <nav style={{
       background: '#16213e',
@@ -67,6 +80,25 @@ export default function Nav({ current, onNav }) {
           {label}
         </button>
       ))}
+
+      {/* Sound toggle, pinned to the right */}
+      <button
+        onClick={toggleSound}
+        title={soundOn ? 'Sound on' : 'Sound off'}
+        aria-label={soundOn ? 'Mute sound' : 'Enable sound'}
+        style={{
+          marginLeft: 'auto',
+          background: 'none',
+          color: soundOn ? '#4f8ef7' : '#666',
+          borderRadius: 0,
+          padding: '14px 12px',
+          fontSize: 16,
+          flexShrink: 0,
+          minHeight: 52,
+        }}
+      >
+        {soundOn ? '🔊' : '🔇'}
+      </button>
 
       {/* Hide scrollbar for Webkit */}
       <style>{`nav::-webkit-scrollbar { display: none; }`}</style>
