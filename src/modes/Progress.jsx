@@ -63,7 +63,32 @@ export default function Progress({ onNav }) {
   useEffect(() => { setStats(getStats()) }, [])
 
   const { themeStats } = stats
-  const hasData = Object.keys(themeStats).length > 0
+  const games = stats.games || { wins: 0, losses: 0, draws: 0 }
+  const totalGames = games.wins + games.losses + games.draws
+  const hasData = Object.keys(themeStats).length > 0 || totalGames > 0 || (stats.puzzlesSolved || 0) > 0
+
+  const StatCards = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
+        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>PUZZLE RATING</p>
+        <p style={{ fontSize: 26, fontWeight: 800, color: '#4f8ef7' }}>{stats.rating ?? 800}</p>
+      </div>
+      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
+        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>PUZZLES SOLVED</p>
+        <p style={{ fontSize: 26, fontWeight: 800, color: '#e0e0e0' }}>{stats.puzzlesSolved || 0}</p>
+      </div>
+      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
+        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>🔥 BEST STREAK</p>
+        <p style={{ fontSize: 26, fontWeight: 800, color: '#f0c040' }}>{stats.bestStreak || 0}</p>
+      </div>
+      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
+        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>ENGINE RECORD</p>
+        <p style={{ fontSize: 18, fontWeight: 800, color: '#e0e0e0' }}>
+          <span style={{ color: '#34c37a' }}>{games.wins}W</span> · <span style={{ color: '#e05454' }}>{games.losses}L</span> · <span style={{ color: '#888' }}>{games.draws}D</span>
+        </p>
+      </div>
+    </div>
+  )
 
   if (!hasData) {
     return (
@@ -104,9 +129,11 @@ export default function Progress({ onNav }) {
   return (
     <div>
       <h2 style={{ marginBottom: 8 }}>My Progress</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>
+      <p style={{ color: '#888', fontSize: 13, marginBottom: 20 }}>
         {attempted.length} of {ALL_THEMES.length} themes attempted · overall solve rate {overallPct}%
       </p>
+
+      <StatCards />
 
       {/* Top weaknesses callout */}
       {top3.length > 0 && top3[0].rate < LEVEL_THRESHOLD && (

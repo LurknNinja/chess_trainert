@@ -3,6 +3,7 @@ import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { PUZZLES as LOCAL_PUZZLES } from '../data/puzzles.js'
 import { recordAttempt, getStats } from '../hooks/useStats.js'
+import { sound } from '../utils/sound.js'
 
 function uciToMove(uci) {
   return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }
@@ -57,6 +58,7 @@ async function fetchLichessDaily() {
       theme: (puzzle.themes?.[0] ?? 'tactics').replace(/([A-Z])/g, ' $1').trim(),
       fen: finalFen,
       moves: puzzle.solution,
+      rating: puzzle.rating ?? 1500,
       description: `Lichess Daily Puzzle · ${puzzle.rating ?? '?'} rating`,
       daily: true,
     }
@@ -83,6 +85,8 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
   const [message, setMessage] = useState('')
   const [hintLevel, setHintLevel] = useState(0)
   const [trainMode, setTrainMode] = useState(initialTrainMode)
+  const [playerStats, setPlayerStats] = useState(() => getStats())
+  const [ratingDelta, setRatingDelta] = useState(null)
 
   // Per-puzzle session tracking (refs so they don't trigger re-renders)
   const hadWrongMove = useRef(false)
@@ -107,10 +111,17 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
 
   const puzzle = puzzles[idx]
 
-  function fireAttempt(theme, solved) {
+  function fireAttempt(theme, solved, puzzleRating) {
     if (attemptFired.current || !theme) return
-    recordAttempt(theme, { solved, firstTry: !hadWrongMove.current, hintsUsed: hintsUsedCount.current })
+    const updated = recordAttempt(theme, {
+      solved,
+      firstTry: !hadWrongMove.current,
+      hintsUsed: hintsUsedCount.current,
+      puzzleRating,
+    })
     attemptFired.current = true
+    setPlayerStats(updated)
+    if (typeof updated._lastDelta === 'number') setRatingDelta(updated._lastDelta)
   }
 
   function loadPuzzle(i, list) {
@@ -118,7 +129,8 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
     const isReset = i === idxRef.current && !list
     // Record outgoing attempt as failed if user made at least one wrong move but didn't solve
     if (!isReset && !attemptFired.current && hadWrongMove.current) {
-      fireAttempt(allPuzzles[idxRef.current]?.theme, false)
+      const outgoing = allPuzzles[idxRef.current]
+      fireAttempt(outgoing?.theme, false, outgoing?.rating)
     }
     hadWrongMove.current = false
     hintsUsedCount.current = 0
@@ -129,6 +141,7 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
     setStatus('idle')
     setMessage('')
     setHintLevel(0)
+    setRatingDelta(null)
   }
 
   useEffect(() => {
@@ -173,6 +186,7 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
       hadWrongMove.current = true
       setMessage('✗ Wrong move — try again.')
       setStatus('wrong')
+      sound.wrong()
       return false
     }
 
@@ -184,9 +198,13 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
     if (nextMoveIdx >= puzzle.moves.length) {
       setStatus('solved')
       setMessage('✓ Puzzle solved!')
-      fireAttempt(puzzle.theme, true)
+      sound.win()
+      fireAttempt(puzzle.theme, true, puzzle.rating)
       return true
     }
+
+    // Correct intermediate move — play a cue, then auto-play the opponent reply.
+    if (g.isCheck()) sound.check(); else if (g.history({ verbose: true })[0]?.captured) sound.capture(); else sound.correct()
 
     setTimeout(() => {
       const g2 = new Chess(newFen)
@@ -227,13 +245,31 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
           </span>
         )}
       </div>
-      <p style={{ color: '#888', marginBottom: 20, fontSize: 14 }}>
+      <p style={{ color: '#888', marginBottom: 14, fontSize: 14 }}>
         {puzzle.daily
           ? <span style={{ color: '#f0c040' }}>★ Daily Puzzle</span>
           : <>Puzzle {idx + (dailyStatus === 'ok' ? 0 : 1)} of {puzzles.length - (dailyStatus === 'ok' ? 1 : 0)}</>
         }
         {' · '}<strong style={{ color: '#4f8ef7' }}>{puzzle.theme}</strong>
+        {typeof puzzle.rating === 'number' && <span style={{ color: '#666' }}> · rated {puzzle.rating}</span>}
       </p>
+
+      {/* Rating + streak strip */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ background: '#16213e', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>YOUR RATING</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#4f8ef7' }}>{playerStats.rating}</span>
+          {ratingDelta !== null && (
+            <span style={{ fontSize: 13, fontWeight: 700, color: ratingDelta >= 0 ? '#34c37a' : '#e05454' }}>
+              {ratingDelta >= 0 ? '+' : ''}{ratingDelta}
+            </span>
+          )}
+        </div>
+        <div style={{ background: '#16213e', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>🔥 STREAK</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#f0c040' }}>{playerStats.streak || 0}</span>
+        </div>
+      </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
           <Chessboard

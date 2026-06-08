@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { OPENINGS } from '../data/openings.js'
+import { playMoveSound, sound } from '../utils/sound.js'
 
 function uciToMove(uci) {
   return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }
@@ -10,10 +11,12 @@ function uciToMove(uci) {
 function buildPositions(opening) {
   const positions = []
   const g = new Chess()
-  positions.push({ fen: g.fen(), description: opening.descriptions[0] })
+  // descriptions[i] annotates move i; the start gets a generic label so the
+  // final move's note is never dropped.
+  positions.push({ fen: g.fen(), description: 'Starting position. Step through the moves →' })
   for (let i = 0; i < opening.moves.length; i++) {
     g.move(uciToMove(opening.moves[i]))
-    positions.push({ fen: g.fen(), description: opening.descriptions[i + 1] || '' })
+    positions.push({ fen: g.fen(), description: opening.descriptions[i] || '' })
   }
   return positions
 }
@@ -67,14 +70,16 @@ export default function Openings() {
     setTrainerThinking(true)
     const timer = setTimeout(() => {
       const g2 = new Chess(drillFen)
+      let tm
       try {
-        g2.move(uciToMove(opening.moves[drillStep]))
+        tm = g2.move(uciToMove(opening.moves[drillStep]))
       } catch {
         setTrainerThinking(false)
         return
       }
       const afterStep = drillStep + 1
       setDrillFen(g2.fen())
+      playMoveSound(tm, g2)
       setDrillStep(afterStep)
       setTrainerThinking(false)
       setShowArrow(false)
@@ -98,13 +103,16 @@ export default function Openings() {
     const uci = sourceSquare + targetSquare
     if (uci !== expected.slice(0, 4)) {
       setDrillMsg(`✗ Wrong! Expected ${expected.slice(0, 2)}→${expected.slice(2, 4)}. Try again.`)
+      sound.wrong()
       return false
     }
     const g2 = new Chess(drillFen)
-    try { g2.move(uciToMove(expected)) } catch { return false }
+    let pm
+    try { pm = g2.move(uciToMove(expected)) } catch { return false }
 
     const nextStep = drillStep + 1
     setDrillFen(g2.fen())
+    playMoveSound(pm, g2)
     setDrillStep(nextStep)
     setShowArrow(false)
 

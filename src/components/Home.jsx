@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
 const CARDS = [
-  { id: 'puzzles',  icon: '🧩', title: 'Puzzles & Tactics', desc: 'Sharpen your calculation with curated puzzles.' },
-  { id: 'engine',   icon: '🤖', title: 'Play vs Engine',    desc: 'Test yourself against Stockfish at any level.' },
+  { id: 'learn',    icon: '🎓', title: 'Learn Chess',       desc: 'Interactive lessons from your first move to winning tactics.' },
+  { id: 'puzzles',  icon: '🧩', title: 'Puzzles & Tactics', desc: 'Sharpen your calculation and earn a puzzle rating.' },
+  { id: 'engine',   icon: '🤖', title: 'Play vs Engine',    desc: 'Play Stockfish with an eval bar, hints, and takebacks.' },
   { id: 'openings', icon: '📖', title: 'Opening Trainer',   desc: 'Memorise and drill your favourite openings.' },
   { id: 'endgames', icon: '♔',  title: 'Endgame Trainer',   desc: 'Master essential endgame patterns.' },
   { id: 'pieces',   icon: '♞',  title: 'Piece Guide',       desc: 'Learn the role, moves, and power of every piece.' },
-  { id: 'progress', icon: '📈', title: 'My Progress',       desc: 'Track weaknesses and your path to 900 ELO.' },
+  { id: 'progress', icon: '📈', title: 'My Progress',       desc: 'Track your rating, streaks, and theme mastery.' },
 ]
 
 function HomeCard({ id, icon, title, desc, onNav }) {
