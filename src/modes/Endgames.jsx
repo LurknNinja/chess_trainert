@@ -147,7 +147,7 @@ export default function Endgames() {
               onPieceDrop: onDrop,
               boardOrientation: endgame.color,
               animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
               allowDragging: !thinking && !game.isGameOver(),
               arrows: hintArrow,
             }}

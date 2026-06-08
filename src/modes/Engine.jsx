@@ -18,8 +18,13 @@ const LEVELS = [
 const START_FEN = new Chess().fen()
 
 function MoveList({ history }) {
-  const endRef = useRef(null)
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history])
+  const scrollRef = useRef(null)
+  // Scroll only the list container, never the page (scrollIntoView would scroll
+  // every ancestor, yanking the whole mobile viewport down on each move).
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [history])
   const pairs = useMemo(() => {
     const rows = []
     for (let i = 0; i < history.length; i += 2)
@@ -28,7 +33,7 @@ function MoveList({ history }) {
   }, [history])
   if (!pairs.length) return <p style={{ fontSize: 12, color: '#444' }}>No moves yet</p>
   return (
-    <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace' }}>
+    <div ref={scrollRef} style={{ maxHeight: 200, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <tbody>
           {pairs.map(({ n, w, b }) => (
@@ -40,7 +45,6 @@ function MoveList({ history }) {
           ))}
         </tbody>
       </table>
-      <div ref={endRef} />
     </div>
   )
 }
@@ -110,12 +114,15 @@ export default function Engine() {
   // Sync React state from the authoritative game and react to game-over.
   const sync = useCallback((soundMove) => {
     const g = gameRef.current
-    if (soundMove) playMoveSound(soundMove, g)
+    const over = g.isGameOver()
+    // On a terminal move, the result handler owns the chime (win/lose), so the
+    // generic move sound is skipped to avoid a conflicting win+lose double-play.
+    if (soundMove && !over) playMoveSound(soundMove, g)
     setFen(g.fen())
     setHistory(g.history())
     setStatusMsg(computeStatus(g))
     setHintArrow([])
-    if (g.isGameOver()) { setGameOver(true); maybeRecordResult(g) }
+    if (over) { setGameOver(true); maybeRecordResult(g) }
   }, [computeStatus, maybeRecordResult])
 
   const engineMove = useCallback(() => {
@@ -315,9 +322,13 @@ export default function Engine() {
         {thinking && <span style={{ color: '#f0c040', marginLeft: 12 }}>Engine thinking…</span>}
       </p>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <EvalBar evalScore={evalScore} height={480} flipped={flipped} />
-          <div style={{ width: 440, maxWidth: 'calc(100vw - 60px)' }}>
+        {/* flex-start keeps the board column at its natural (auto) height so the
+            square board self-sizes — a stretched container would give the board a
+            definite height and reintroduce gaps between ranks. The eval bar uses
+            align-self:stretch to match the board's height. */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', width: 460, maxWidth: '100%' }}>
+          <EvalBar evalScore={evalScore} flipped={flipped} />
+          <div style={{ flex: 1, minWidth: 0 }}>
             <CapturedRow pieces={topCaptured.pieces} color={topCaptured.color} advantage={topCaptured.adv} />
             <Chessboard
               options={{
@@ -325,7 +336,7 @@ export default function Engine() {
                 onPieceDrop: onDrop,
                 boardOrientation: orientation,
                 animationDurationInMs: 200,
-                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
                 allowDragging: !thinking && !gameOver,
                 arrows: hintArrow,
               }}
