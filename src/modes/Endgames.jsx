@@ -3,6 +3,7 @@ import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { useStockfish } from '../hooks/useStockfish.js'
 import { ENDGAMES } from '../data/endgames.js'
+import { playMoveSound } from '../utils/sound.js'
 
 export default function Endgames() {
   const [idx, setIdx] = useState(0)
@@ -89,9 +90,11 @@ export default function Endgames() {
         }
 
         const g = new Chess(fenRef.current)
-        try { g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
+        let m
+        try { m = g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }) }
         catch { setThinking(false); return }
         setFen(g.fen())
+        playMoveSound(m, g)
         setThinking(false)
         setStatusMsg(computeStatus(g))
       }
@@ -112,8 +115,10 @@ export default function Endgames() {
     if (g.isGameOver()) return false
     const playerTurn = endgame.color === 'white' ? 'w' : 'b'
     if (g.turn() !== playerTurn) return false
-    try { g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
+    let m
+    try { m = g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
     setFen(g.fen())
+    playMoveSound(m, g)
     setMoveCount(c => c + 1)
     setStatusMsg(computeStatus(g))
     setHintArrow([])
