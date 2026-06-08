@@ -149,7 +149,7 @@ export default function Openings() {
                 onPieceDrop: onDrillDrop,
                 boardOrientation: opening.color,
                 animationDurationInMs: 200,
-                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
                 allowDragging: !isDone && !trainerThinking,
                 arrows: drillArrow,
               }}
@@ -197,7 +197,7 @@ export default function Openings() {
               position: positions[posIdx]?.fen,
               boardOrientation: opening.color,
               animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
               allowDragging: false,
               arrows: learnArrow,
             }}

@@ -1,7 +1,9 @@
 import { formatEval } from '../utils/chess.js'
 
 // Vertical evaluation bar (White advantage grows upward), like analysis boards.
-export default function EvalBar({ evalScore, height = 480, flipped = false }) {
+// It stretches to match the board's height via flexbox, so it must never impose
+// a fixed height that could distort the board beside it.
+export default function EvalBar({ evalScore, flipped = false }) {
   const cp = evalScore?.cp ?? 0
   const mate = evalScore?.mate
   // Map centipawns to a 0–100 fill using a smooth, bounded curve.
@@ -23,9 +25,9 @@ export default function EvalBar({ evalScore, height = 480, flipped = false }) {
     <div
       title={`Evaluation: ${label}`}
       style={{
-        width: 18,
-        height,
-        borderRadius: 6,
+        width: 16,
+        alignSelf: 'stretch',
+        borderRadius: 5,
         overflow: 'hidden',
         background: '#0d1117',
         border: '1px solid #2a2a4a',
@@ -41,9 +43,9 @@ export default function EvalBar({ evalScore, height = 480, flipped = false }) {
       }} />
       <span style={{
         position: 'absolute', left: 0, right: 0,
-        [whiteWinning ? 'bottom' : 'top']: 4,
+        [whiteWinning ? 'bottom' : 'top']: 3,
         textAlign: 'center',
-        fontSize: 9, fontWeight: 700, fontFamily: 'monospace',
+        fontSize: 8, fontWeight: 700, fontFamily: 'monospace',
         color: whiteWinning ? '#1a1a2e' : '#e0e0e0',
         textShadow: whiteWinning ? 'none' : '0 1px 2px #000',
       }}>
