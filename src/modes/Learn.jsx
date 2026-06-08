@@ -139,7 +139,10 @@ function LessonView({ lesson, onBack, onComplete }) {
   const [remaining, setRemaining] = useState(() => new Set(lesson.targets || []))
 
   // ── Sequence-mode state ────────────────────────────────────────────────────
-  const gameRef = useRef(new Chess(lesson.fen))
+  // Only sequence lessons use chess.js; collect lessons run on kingless boards
+  // (which chess.js rejects), so guard the instantiation.
+  const gameRef = useRef(undefined)
+  if (gameRef.current === undefined) gameRef.current = isCollect ? null : new Chess(lesson.fen)
   const [fen, setFen] = useState(lesson.fen)
   const [stepIdx, setStepIdx] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -275,7 +278,7 @@ function LessonView({ lesson, onBack, onComplete }) {
               onPieceDrop: onDrop,
               boardOrientation: 'white',
               animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006' },
+              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
               squareStyles,
               allowDragging: !done && !busy,
             }}
