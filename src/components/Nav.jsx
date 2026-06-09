@@ -81,7 +81,7 @@ export default function Nav({ current, onNav }) {
         </button>
       ))}
 
-      {/* Sound toggle, pinned to the right */}
+      {/* Sound toggle + settings, pinned to the right */}
       <button
         onClick={toggleSound}
         title={soundOn ? 'Sound on' : 'Sound off'}
@@ -91,13 +91,30 @@ export default function Nav({ current, onNav }) {
           background: 'none',
           color: soundOn ? '#4f8ef7' : '#666',
           borderRadius: 0,
-          padding: '14px 12px',
+          padding: '14px 10px',
           fontSize: 16,
           flexShrink: 0,
           minHeight: 52,
         }}
       >
         {soundOn ? '🔊' : '🔇'}
+      </button>
+      <button
+        onClick={() => onNav('settings')}
+        title="Settings"
+        aria-label="Settings"
+        style={{
+          background: 'none',
+          color: current === 'settings' ? '#4f8ef7' : '#aaa',
+          borderBottom: current === 'settings' ? '2px solid #4f8ef7' : '2px solid transparent',
+          borderRadius: 0,
+          padding: '14px 12px',
+          fontSize: 16,
+          flexShrink: 0,
+          minHeight: 52,
+        }}
+      >
+        ⚙
       </button>
 
       {/* Hide scrollbar for Webkit */}

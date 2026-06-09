@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { OPENINGS } from '../data/openings.js'
 import { playMoveSound, sound } from '../utils/sound.js'
 
@@ -143,16 +143,13 @@ export default function Openings() {
         <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>{opening.name} · you play {opening.color}</p>
         <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
           <div style={{ width: 480, maxWidth: '100%' }}>
-            <Chessboard
-              options={{
-                position: drillFen,
-                onPieceDrop: onDrillDrop,
-                boardOrientation: opening.color,
-                animationDurationInMs: 200,
-                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
-                allowDragging: !isDone && !trainerThinking,
-                arrows: drillArrow,
-              }}
+            <Board
+              position={drillFen}
+              orientation={opening.color}
+              onDrop={onDrillDrop}
+              allowDragging={!isDone && !trainerThinking}
+              arrows={drillArrow}
+              id="opening-drill"
             />
           </div>
           <div style={{ flex: 1, minWidth: 180 }}>
@@ -192,15 +189,13 @@ export default function Openings() {
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
-          <Chessboard
-            options={{
-              position: positions[posIdx]?.fen,
-              boardOrientation: opening.color,
-              animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
-              allowDragging: false,
-              arrows: learnArrow,
-            }}
+          <Board
+            position={positions[posIdx]?.fen}
+            orientation={opening.color}
+            allowDragging={false}
+            interactive={false}
+            arrows={learnArrow}
+            id="opening-learn"
           />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
