@@ -83,7 +83,7 @@ export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating
   if (puzzleId != null) {
     data.missed = data.missed || {}
     if (solved && firstTry) delete data.missed[puzzleId]
-    else if (!solved) data.missed[puzzleId] = true
+    else if (!solved || !firstTry) data.missed[puzzleId] = true
   }
 
   // Rating + streak only move on a genuine attempt with a known puzzle rating.
