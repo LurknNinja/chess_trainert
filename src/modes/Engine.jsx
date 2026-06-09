@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { useStockfish } from '../hooks/useStockfish.js'
 import EvalBar from '../components/EvalBar.jsx'
 import { capturedPieces, pieceGlyph, materialBalance, normalizeScore } from '../utils/chess.js'
@@ -330,16 +330,13 @@ export default function Engine() {
           <EvalBar evalScore={evalScore} flipped={flipped} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <CapturedRow pieces={topCaptured.pieces} color={topCaptured.color} advantage={topCaptured.adv} />
-            <Chessboard
-              options={{
-                position: fen,
-                onPieceDrop: onDrop,
-                boardOrientation: orientation,
-                animationDurationInMs: 200,
-                boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto', gridTemplateRows: 'repeat(8, 1fr)' },
-                allowDragging: !thinking && !gameOver,
-                arrows: hintArrow,
-              }}
+            <Board
+              position={fen}
+              orientation={orientation}
+              onDrop={onDrop}
+              allowDragging={!thinking && !gameOver}
+              arrows={hintArrow}
+              id="engine"
             />
             <CapturedRow pieces={botCaptured.pieces} color={botCaptured.color} advantage={botCaptured.adv} />
           </div>

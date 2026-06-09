@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { PUZZLES as LOCAL_PUZZLES } from '../data/puzzles.js'
 import { recordAttempt, getStats } from '../hooks/useStats.js'
 import { sound } from '../utils/sound.js'
@@ -272,16 +272,14 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
-          <Chessboard
-            options={{
-              position: fen,
-              onPieceDrop: onDrop,
-              boardOrientation: orientation,
-              animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto', gridTemplateRows: 'repeat(8, 1fr)' },
-              squareStyles: hintSquares,
-              arrows: hintArrow,
-            }}
+          <Board
+            position={fen}
+            orientation={orientation}
+            onDrop={onDrop}
+            allowDragging={status !== 'solved'}
+            squareStyles={hintSquares}
+            arrows={hintArrow}
+            id="puzzles"
           />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { LESSON_GROUPS, ALL_LESSONS } from '../data/lessons.js'
 import { recordLesson, getStats } from '../hooks/useStats.js'
 import { sound, playMoveSound } from '../utils/sound.js'
@@ -262,6 +262,17 @@ function LessonView({ lesson, onBack, onComplete }) {
 
   const position = isCollect ? mapToFen(boardMap) : fen
   const onDrop = isCollect ? collectDrop : sequenceDrop
+  // In collect mode the board is kingless, so feed legal-move dots from our own
+  // single-piece generator instead of chess.js.
+  const getLegalTargets = isCollect
+    ? (square) => {
+        if (square !== piecePos) return []
+        const code = boardMap[piecePos]
+        if (!code) return []
+        const occ = new Set(Object.keys(boardMap).filter(s => s !== piecePos))
+        return [...pieceMoves(code[1], piecePos, occ)]
+      }
+    : undefined
   const idx = ALL_LESSONS.findIndex(l => l.id === lesson.id)
   const nextLesson = ALL_LESSONS[idx + 1]
 
@@ -272,16 +283,14 @@ function LessonView({ lesson, onBack, onComplete }) {
       <p style={{ color: '#666', fontSize: 12, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lesson.level} · {isCollect ? 'Movement' : 'Guided lesson'}</p>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 440, maxWidth: '100%' }}>
-          <Chessboard
-            options={{
-              position,
-              onPieceDrop: onDrop,
-              boardOrientation: 'white',
-              animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto', gridTemplateRows: 'repeat(8, 1fr)' },
-              squareStyles,
-              allowDragging: !done && !busy,
-            }}
+          <Board
+            position={position}
+            orientation="white"
+            onDrop={onDrop}
+            allowDragging={!done && !busy}
+            squareStyles={squareStyles}
+            getLegalTargets={getLegalTargets}
+            id="learn"
           />
         </div>
         <div style={{ flex: 1, minWidth: 220 }}>
