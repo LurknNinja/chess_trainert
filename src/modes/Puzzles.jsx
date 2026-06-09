@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { PUZZLES as LOCAL_PUZZLES } from '../data/puzzles.js'
 import { recordAttempt, getStats } from '../hooks/useStats.js'
 import { sound } from '../utils/sound.js'
@@ -85,6 +85,7 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
   const [message, setMessage] = useState('')
   const [hintLevel, setHintLevel] = useState(0)
   const [trainMode, setTrainMode] = useState(initialTrainMode)
+  const [reviewMode, setReviewMode] = useState(false)
   const [playerStats, setPlayerStats] = useState(() => getStats())
   const [ratingDelta, setRatingDelta] = useState(null)
 
@@ -111,13 +112,14 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
 
   const puzzle = puzzles[idx]
 
-  function fireAttempt(theme, solved, puzzleRating) {
+  function fireAttempt(theme, solved, puzzleRating, puzzleId) {
     if (attemptFired.current || !theme) return
     const updated = recordAttempt(theme, {
       solved,
       firstTry: !hadWrongMove.current,
       hintsUsed: hintsUsedCount.current,
       puzzleRating,
+      puzzleId,
     })
     attemptFired.current = true
     setPlayerStats(updated)
@@ -130,7 +132,7 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
     // Record outgoing attempt as failed if user made at least one wrong move but didn't solve
     if (!isReset && !attemptFired.current && hadWrongMove.current) {
       const outgoing = allPuzzles[idxRef.current]
-      fireAttempt(outgoing?.theme, false, outgoing?.rating)
+      fireAttempt(outgoing?.theme, false, outgoing?.rating, outgoing?.id)
     }
     hadWrongMove.current = false
     hintsUsedCount.current = 0
@@ -148,8 +150,18 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
     if (dailyStatus === 'ok') loadPuzzle(0, puzzles)
   }, [dailyStatus]) // eslint-disable-line
 
+  function pickNextReview() {
+    const allPuzzles = puzzlesRef.current
+    const missed = getStats().missed || {}
+    const pool = allPuzzles.filter(p => !p.daily && missed[p.id])
+    if (!pool.length) { setReviewMode(false); pickNext(); return }
+    const next = pool[Math.floor(Math.random() * pool.length)]
+    loadPuzzle(allPuzzles.indexOf(next))
+  }
+
   function pickNext() {
     const allPuzzles = puzzlesRef.current
+    if (reviewMode) { pickNextReview(); return }
     if (!trainMode) {
       const next = Math.min(idxRef.current + 1, allPuzzles.length - 1)
       loadPuzzle(next)
@@ -199,7 +211,7 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
       setStatus('solved')
       setMessage('✓ Puzzle solved!')
       sound.win()
-      fireAttempt(puzzle.theme, true, puzzle.rating)
+      fireAttempt(puzzle.theme, true, puzzle.rating, puzzle.id)
       return true
     }
 
@@ -272,16 +284,14 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
-          <Chessboard
-            options={{
-              position: fen,
-              onPieceDrop: onDrop,
-              boardOrientation: orientation,
-              animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
-              squareStyles: hintSquares,
-              arrows: hintArrow,
-            }}
+          <Board
+            position={fen}
+            orientation={orientation}
+            onDrop={onDrop}
+            allowDragging={status !== 'solved'}
+            squareStyles={hintSquares}
+            arrows={hintArrow}
+            id="puzzles"
           />
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
@@ -308,22 +318,45 @@ export default function Puzzles({ onNav, initialTrainMode = false }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             <button className="btn-secondary" onClick={() => loadPuzzle(idx)}>Reset</button>
             {idx > 0 && <button className="btn-secondary" onClick={() => loadPuzzle(idx - 1)}>← Prev</button>}
-            <button className="btn-primary" onClick={pickNext} disabled={!trainMode && idx >= puzzles.length - 1}>
+            <button className="btn-primary" onClick={pickNext} disabled={!trainMode && !reviewMode && idx >= puzzles.length - 1}>
               Next →
             </button>
           </div>
 
           <button
-            onClick={() => setTrainMode(t => !t)}
+            onClick={() => { setReviewMode(false); setTrainMode(t => !t) }}
             style={{
               width: '100%', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               background: trainMode ? '#1a3a1a' : '#2a2a4a',
               color: trainMode ? '#34c37a' : '#aaa',
               border: `1px solid ${trainMode ? '#34c37a55' : 'transparent'}`,
-              cursor: 'pointer',
+              cursor: 'pointer', marginBottom: 8,
             }}
           >
             {trainMode ? '⚡ Training Weaknesses — click to stop' : 'Train My Weaknesses'}
+          </button>
+
+          {(() => {
+            const missedCount = Object.keys(playerStats.missed || {}).length
+            return (
+              <button
+                onClick={() => { if (reviewMode) { setReviewMode(false) } else if (missedCount) { setTrainMode(false); setReviewMode(true); setTimeout(pickNextReview, 0) } }}
+                disabled={!reviewMode && !missedCount}
+                style={{
+                  width: '100%', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  background: reviewMode ? '#3a2a0a' : '#2a2a4a',
+                  color: reviewMode ? '#f0c040' : missedCount ? '#aaa' : '#555',
+                  border: `1px solid ${reviewMode ? '#f0c04055' : 'transparent'}`,
+                  cursor: missedCount || reviewMode ? 'pointer' : 'not-allowed', marginBottom: 8,
+                }}
+              >
+                {reviewMode ? '↻ Reviewing Mistakes — click to stop' : `Review Mistakes (${missedCount})`}
+              </button>
+            )
+          })()}
+
+          <button className="btn-secondary" style={{ width: '100%' }} onClick={() => onNav('rush')}>
+            ⚡ Puzzle Rush
           </button>
 
           <div style={{ marginTop: 20 }}>

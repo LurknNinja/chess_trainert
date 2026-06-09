@@ -56,6 +56,33 @@ function NextLevelRow({ theme, rate }) {
   )
 }
 
+function RatingChart({ history }) {
+  const pts = (history || []).filter(h => typeof h.rating === 'number')
+  if (pts.length < 2) return null
+  const W = 320, H = 90, pad = 6
+  const ratings = pts.map(p => p.rating)
+  const min = Math.min(...ratings), max = Math.max(...ratings)
+  const span = Math.max(40, max - min)
+  const x = i => pad + (i / (pts.length - 1)) * (W - 2 * pad)
+  const y = r => pad + (1 - (r - min) / span) * (H - 2 * pad)
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.rating).toFixed(1)}`).join(' ')
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - pad} L${x(0).toFixed(1)},${H - pad} Z`
+  const up = ratings[ratings.length - 1] >= ratings[0]
+  const color = up ? '#34c37a' : '#e0843c'
+  return (
+    <div style={{ background: '#16213e', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <p style={{ fontSize: 11, color: '#888', fontWeight: 700, letterSpacing: '0.05em' }}>RATING OVER TIME</p>
+        <p style={{ fontSize: 12, color }}>{up ? '▲' : '▼'} {ratings[0]} → {ratings[ratings.length - 1]}</p>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: 'block' }}>
+        <path d={area} fill={color} fillOpacity="0.12" />
+        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+    </div>
+  )
+}
+
 export default function Progress({ onNav }) {
   const [stats, setStats] = useState(() => getStats())
   const [confirmReset, setConfirmReset] = useState(false)
@@ -134,6 +161,7 @@ export default function Progress({ onNav }) {
       </p>
 
       <StatCards />
+      <RatingChart history={stats.ratingHistory} />
 
       {/* Top weaknesses callout */}
       {top3.length > 0 && top3[0].rate < LEVEL_THRESHOLD && (

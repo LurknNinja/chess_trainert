@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import Board from '../components/Board.jsx'
 import { useStockfish } from '../hooks/useStockfish.js'
 import { ENDGAMES } from '../data/endgames.js'
 import { playMoveSound } from '../utils/sound.js'
@@ -141,16 +141,13 @@ export default function Endgames() {
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         <div style={{ width: 480, maxWidth: '100%' }}>
-          <Chessboard
-            options={{
-              position: fen,
-              onPieceDrop: onDrop,
-              boardOrientation: endgame.color,
-              animationDurationInMs: 200,
-              boardStyle: { borderRadius: 8, boxShadow: '0 4px 24px #0006', aspectRatio: '1 / 1', height: 'auto' },
-              allowDragging: !thinking && !game.isGameOver(),
-              arrows: hintArrow,
-            }}
+          <Board
+            position={fen}
+            orientation={endgame.color}
+            onDrop={onDrop}
+            allowDragging={!thinking && !game.isGameOver()}
+            arrows={hintArrow}
+            id="endgames"
           />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>

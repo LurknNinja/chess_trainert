@@ -152,6 +152,61 @@ export const LESSON_GROUPS = [
         ],
         success: 'Skewers win big material. Look for enemy king and queen on the same line.',
       },
+      {
+        id: 'tactic-double',
+        title: 'The Double Attack',
+        mode: 'sequence',
+        fen: '4k3/1r6/8/8/8/8/8/4K2Q w - - 0 1',
+        intro: 'A double attack hits two targets at once. Your queen can check the king and attack the rook with a single move.',
+        steps: [
+          { instruction: 'Play Qe4 — check the king and hit the rook.', move: 'h1e4', reply: 'e8d8', explain: 'Qe4+ attacks the king down the e-file and the rook along the e4–b7 diagonal.' },
+          { instruction: 'Now win the rook.', move: 'e4b7', explain: 'Qxb7 — the opponent could only answer one of the two threats.' },
+        ],
+        success: 'One move, two threats — the essence of the double attack.',
+      },
+      {
+        id: 'tactic-discovered',
+        title: 'The Discovered Attack',
+        mode: 'sequence',
+        fen: '3qk3/8/8/3N4/8/8/8/3RK3 w - - 0 1',
+        intro: 'Moving one piece can unleash an attack from the piece behind it. Your knight is hiding a rook aimed at the queen.',
+        steps: [
+          { instruction: 'Move the knight with check, uncovering the rook.', move: 'd5f6', reply: 'e8e7', explain: 'Nf6+ checks the king and discovers the rook’s attack down the d-file.' },
+          { instruction: 'Capture the queen.', move: 'd1d8', explain: 'Rxd8 — when one move makes two attacks, something has to fall.' },
+        ],
+        success: 'Discovered attacks are devastating: two pieces strike when one moves.',
+      },
+    ],
+  },
+  {
+    level: 'Checkmate Patterns',
+    blurb: 'The essential mating techniques every player should know by heart.',
+    lessons: [
+      {
+        id: 'mate-ladder',
+        title: 'The Ladder (Two Rooks)',
+        mode: 'sequence',
+        fen: '8/8/6k1/R7/8/8/8/1R2K3 w - - 0 1',
+        intro: 'Two rooks checkmate a lone king by walling off ranks and pushing it to the edge — the "ladder".',
+        steps: [
+          { instruction: 'Check with the back rook, forcing the king up a rank.', move: 'b1b6', reply: 'g6g7', explain: 'Rb6+ seals the 6th rank; the king must retreat.' },
+          { instruction: 'Check with the other rook on the next rank.', move: 'a5a7', reply: 'g7g8', explain: 'Ra7+ drives the king to the last rank.' },
+          { instruction: 'Deliver checkmate with the back rook.', move: 'b6b8', explain: 'Rb8# — the two rooks control the last two ranks. No escape.' },
+        ],
+        success: 'The ladder beats a lone king every time — just keep alternating rooks.',
+      },
+      {
+        id: 'mate-smothered',
+        title: 'Smothered Mate',
+        mode: 'sequence',
+        fen: '5r1k/6pp/7N/8/2Q5/8/8/4K3 w - - 0 1',
+        intro: 'A knight mates a king trapped by its own pieces. Sacrifice the queen to force it — Philidor’s legendary mate.',
+        steps: [
+          { instruction: 'Check with the queen on g8 — a sacrifice!', move: 'c4g8', reply: 'f8g8', explain: 'Qg8+! The rook must capture — the king can’t take because the knight guards g8.' },
+          { instruction: 'Deliver smothered mate with the knight.', move: 'h6f7', explain: 'Nf7# — the king is smothered by its own rook and pawns.' },
+        ],
+        success: 'A queen sacrifice clears the way for an unstoppable knight mate.',
+      },
     ],
   },
 ]
