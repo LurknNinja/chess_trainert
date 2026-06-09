@@ -3,7 +3,8 @@ import { useState } from 'react'
 const CARDS = [
   { id: 'learn',    icon: '🎓', title: 'Learn Chess',       desc: 'Interactive lessons from your first move to winning tactics.' },
   { id: 'puzzles',  icon: '🧩', title: 'Puzzles & Tactics', desc: 'Sharpen your calculation and earn a puzzle rating.' },
-  { id: 'engine',   icon: '🤖', title: 'Play vs Engine',    desc: 'Play Stockfish with an eval bar, hints, and takebacks.' },
+  { id: 'rush',     icon: '⚡', title: 'Puzzle Rush',        desc: 'Race the clock — solve as many as you can in 3 minutes.' },
+  { id: 'engine',   icon: '🤖', title: 'Play vs Engine',    desc: 'Play Stockfish with an eval bar, hints, and game review.' },
   { id: 'openings', icon: '📖', title: 'Opening Trainer',   desc: 'Memorise and drill your favourite openings.' },
   { id: 'endgames', icon: '♔',  title: 'Endgame Trainer',   desc: 'Master essential endgame patterns.' },
   { id: 'pieces',   icon: '♞',  title: 'Piece Guide',       desc: 'Learn the role, moves, and power of every piece.' },

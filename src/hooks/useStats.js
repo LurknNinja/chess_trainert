@@ -14,6 +14,8 @@ function defaultState() {
     bestStreak: 0,
     games: { wins: 0, losses: 0, draws: 0 },
     lessonsCompleted: {},   // { lessonId: true }
+    rushBest: 0,            // best Puzzle Rush score
+    missed: {},            // { puzzleId: true } — puzzles to review (spaced repetition)
   }
 }
 
@@ -30,6 +32,8 @@ function migrate(parsed) {
     ratingHistory: Array.isArray(parsed.ratingHistory) ? parsed.ratingHistory : [],
     games: { ...base.games, ...(parsed.games || {}) },
     lessonsCompleted: (parsed.lessonsCompleted && typeof parsed.lessonsCompleted === 'object') ? parsed.lessonsCompleted : {},
+    rushBest: typeof parsed.rushBest === 'number' ? parsed.rushBest : 0,
+    missed: (parsed.missed && typeof parsed.missed === 'object') ? parsed.missed : {},
   }
 }
 
@@ -64,7 +68,7 @@ function updateRating(playerRating, puzzleRating, solved, played) {
   return Math.round(playerRating + k * (score - exp))
 }
 
-export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating }) {
+export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating, puzzleId }) {
   if (!theme) return getStats()
   const data = load()
   const b = data.themeStats[theme] ?? { attempts: 0, solved: 0, firstTrySolves: 0, hintsUsed: 0 }
@@ -73,6 +77,14 @@ export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating
   if (solved && firstTry) b.firstTrySolves += 1
   b.hintsUsed += (hintsUsed ?? 0)
   data.themeStats[theme] = b
+
+  // Spaced-repetition queue: a clean first-try solve clears a puzzle; any
+  // failure (or solving only after a wrong move) marks it for later review.
+  if (puzzleId != null) {
+    data.missed = data.missed || {}
+    if (solved && firstTry) delete data.missed[puzzleId]
+    else if (!solved) data.missed[puzzleId] = true
+  }
 
   // Rating + streak only move on a genuine attempt with a known puzzle rating.
   if (typeof puzzleRating === 'number') {
@@ -93,6 +105,20 @@ export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating
     data._lastDelta = data.rating - before
   }
 
+  save(data)
+  return data
+}
+
+export function recordRush(score) {
+  const data = load()
+  data.rushBest = Math.max(data.rushBest || 0, score)
+  save(data)
+  return data
+}
+
+export function clearMissed(puzzleId) {
+  const data = load()
+  if (data.missed) delete data.missed[puzzleId]
   save(data)
   return data
 }
