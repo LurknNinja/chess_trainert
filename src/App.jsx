@@ -10,8 +10,9 @@ import Endgames from './modes/Endgames.jsx'
 import PieceGuide from './modes/PieceGuide.jsx'
 import Progress from './modes/Progress.jsx'
 import Settings from './modes/Settings.jsx'
+import Glossary from './modes/Glossary.jsx'
 
-const MODES = { home: Home, learn: Learn, puzzles: Puzzles, rush: PuzzleRush, engine: Engine, openings: Openings, endgames: Endgames, pieces: PieceGuide, progress: Progress, settings: Settings }
+const MODES = { home: Home, learn: Learn, puzzles: Puzzles, rush: PuzzleRush, engine: Engine, openings: Openings, endgames: Endgames, pieces: PieceGuide, progress: Progress, glossary: Glossary, settings: Settings }
 
 export default function App() {
   const [mode, setMode] = useState('home')

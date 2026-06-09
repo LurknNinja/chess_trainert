@@ -8,6 +8,7 @@ const CARDS = [
   { id: 'openings', icon: '📖', title: 'Opening Trainer',   desc: 'Memorise and drill your favourite openings.' },
   { id: 'endgames', icon: '♔',  title: 'Endgame Trainer',   desc: 'Master essential endgame patterns.' },
   { id: 'pieces',   icon: '♞',  title: 'Piece Guide',       desc: 'Learn the role, moves, and power of every piece.' },
+  { id: 'glossary', icon: '📚', title: 'Glossary',          desc: 'Look up the chess terms every player should know.' },
   { id: 'progress', icon: '📈', title: 'My Progress',       desc: 'Track your rating, streaks, and theme mastery.' },
 ]
 
