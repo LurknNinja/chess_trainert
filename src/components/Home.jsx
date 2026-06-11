@@ -56,6 +56,9 @@ export default function Home({ onNav }) {
           <HomeCard key={id} id={id} icon={icon} title={title} desc={desc} onNav={onNav} />
         ))}
       </div>
+      <p style={{ color: '#555', fontSize: 12, marginTop: 32, textAlign: 'center' }}>
+        Learn · Practice · Play — improve at every level. <span style={{ color: '#4f8ef7' }}>v1.1</span>
+      </p>
     </div>
   )
 }
