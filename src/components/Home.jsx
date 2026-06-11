@@ -57,7 +57,7 @@ export default function Home({ onNav }) {
         ))}
       </div>
       <p style={{ color: '#555', fontSize: 12, marginTop: 32, textAlign: 'center' }}>
-        Learn · Practice · Play — improve at every level. <span style={{ color: '#4f8ef7' }}>v1.1</span>
+        Learn · Practice · Play — improve at every level. <span style={{ color: '#4f8ef7' }}>v1.2</span>
       </p>
     </div>
   )

@@ -8,7 +8,8 @@ import { playMoveSound, sound } from '../utils/sound.js'
 import { recordGame } from '../hooks/useStats.js'
 import { classifyMove, accuracyFromLosses, TAG_META } from '../utils/review.js'
 
-const REVIEW_MOVETIME = 200 // ms per position during game review
+const REVIEW_DEPTH = 12       // search depth per position during game review
+const REVIEW_TIMEOUT = 2500   // ms watchdog per position (keeps review from stalling)
 
 const LEVELS = [
   { label: 'Beginner',     skill: 0,  movetime: 50,   elo: 800  },
@@ -388,13 +389,15 @@ export default function Engine() {
     sound.click()
   }
 
-  // Analyze one position to a fixed depth.
-  // This version prevents review from freezing forever at 0.
+  // Analyze one position with the PLAY engine (the instance proven to respond on
+  // this device). A depth search reliably emits a score; a watchdog prevents any
+  // stall. gotScore flags whether a real evaluation was actually received.
   const analyzeOne = useCallback((positionFen) => new Promise((resolve) => {
     const turn = positionFen.split(' ')[1]
     let cp = 0
     let mate = null
     let best = null
+    let gotScore = false
     let done = false
     let unsub = () => {}
 
@@ -404,15 +407,15 @@ export default function Engine() {
       done = true
       clearTimeout(timer)
       unsub()
-      resolve({ cp, mate, best })
+      resolve({ cp, mate, best, gotScore })
     }
 
     const timer = setTimeout(() => {
-      analysis.send('stop')
+      play.send('stop')
       finish()
-    }, REVIEW_MOVETIME + 2500)
+    }, REVIEW_TIMEOUT)
 
-    unsub = analysis.onMessage((line) => {
+    unsub = play.onMessage((line) => {
       if (line.startsWith('info') && line.includes(' score ')) {
         const m = line.match(/score (cp|mate) (-?\d+)/)
         const pv = line.match(/ pv ([a-h][1-8][a-h][1-8][qrbn]?)/)
@@ -421,6 +424,7 @@ export default function Engine() {
           const n = normalizeScore({ type: m[1], value: parseInt(m[2], 10) }, turn)
           cp = n.cp
           mate = n.mate
+          gotScore = true
         }
 
         if (pv) best = pv[1]
@@ -431,10 +435,10 @@ export default function Engine() {
       }
     })
 
-    analysis.send('stop')
-    analysis.send('position fen ' + positionFen)
-    analysis.send('go movetime ' + REVIEW_MOVETIME)
-  }), [analysis])
+    play.send('stop')
+    play.send('position fen ' + positionFen)
+    play.send('go depth ' + REVIEW_DEPTH)
+  }), [play])
 
   async function reviewGame() {
     const sans = gameRef.current.history()
@@ -452,16 +456,31 @@ export default function Engine() {
 
     setReview({ status: 'analyzing', progress: 0, total: fens.length, error: null })
 
+    // Analyse at full strength regardless of the difficulty the game was played at.
+    play.send('stop')
+    play.send('setoption name Skill Level value 20')
+
     const evals = []
+    let scored = 0
 
     for (let i = 0; i < fens.length; i++) {
       try {
-        evals.push(await analyzeOne(fens[i])) // eslint-disable-line no-await-in-loop
+        const e = await analyzeOne(fens[i]) // eslint-disable-line no-await-in-loop
+        if (e.gotScore) scored++
+        evals.push(e)
       } catch {
         evals.push({ cp: 0, mate: null, best: null })
       }
 
       setReview({ status: 'analyzing', progress: i + 1, total: fens.length, error: null })
+    }
+
+    // If the engine never returned a real evaluation, don't show a misleading
+    // 100% — report the failure so the player can retry instead.
+    if (scored === 0) {
+      setReview({ status: 'none' })
+      setStatusMsg('Game review unavailable — the engine did not respond. Please try again.')
+      return
     }
 
     const moves = ucis.map((uci, i) => {
