@@ -8,6 +8,7 @@ const MODES = [
   { id: 'puzzles',  icon: '🧩', title: 'Puzzles',         desc: 'Build tactical vision with rated puzzles.',           badge: 'Rated',      action: 'Solve puzzles' },
   { id: 'rush',     icon: '⚡', title: 'Puzzle Rush',      desc: 'Fast tactics under pressure — beat your best.',       badge: '3 min',      action: 'Start rush' },
   { id: 'engine',   icon: '🤖', title: 'Play vs Engine',  desc: 'Play Stockfish, then review your mistakes.',          badge: '5 bots',     action: 'Play a game' },
+  { id: 'threats',  icon: '🛡️', title: 'Find the Threat', desc: 'Spot your opponent’s plan before it lands.',          badge: 'Defense',    action: 'Train defense' },
   { id: 'openings', icon: '📖', title: 'Openings',        desc: 'Understand the plans, not just memorised moves.',     badge: '10 lines',   action: 'Study openings' },
   { id: 'endgames', icon: '♔',  title: 'Endgames',        desc: 'Practice essential winning and drawing technique.',   badge: 'Technique',  action: 'Train endgames' },
   { id: 'pieces',   icon: '♞',  title: 'Piece Guide',     desc: 'Learn what every piece wants.',                       badge: 'Basics',     action: 'Open guide' },
@@ -127,7 +128,7 @@ export default function Home({ onNav }) {
       </section>
 
       <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 4 }}>
-        Learn · Practice · Play — improve at every level. <span style={{ color: 'var(--accent)' }}>v1.3</span>
+        Learn · Practice · Play — improve at every level. <span style={{ color: 'var(--accent)' }}>v1.4</span>
       </p>
     </div>
   )
