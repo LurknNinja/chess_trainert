@@ -128,7 +128,7 @@ export default function Home({ onNav }) {
       </section>
 
       <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 4 }}>
-        Learn · Practice · Play — improve at every level. <span style={{ color: 'var(--accent)' }}>v1.4</span>
+        Learn · Practice · Play — improve at every level. <span style={{ color: 'var(--accent)' }}>v1.5</span>
       </p>
     </div>
   )

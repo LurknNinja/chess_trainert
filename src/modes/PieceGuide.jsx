@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { PIECES } from '../data/pieces.js'
 
+// Common beginner mistakes + which movement lesson practices each piece.
+const BEGINNER_MISTAKES = {
+  king:   'Leaving the king in the centre. Castle early to tuck it safely away.',
+  queen:  'Bringing the queen out too early, where it gets chased and loses time.',
+  rook:   'Developing rooks late. They only shine on open files and ranks.',
+  bishop: 'Trapping a bishop behind its own pawns instead of giving it open diagonals.',
+  knight: 'Parking a knight on the rim, where it controls far fewer squares — “a knight on the rim is dim”.',
+  pawn:   'Pushing too many pawns early and forgetting to develop pieces.',
+}
+const PRACTICE_LESSON = { rook: 'The Rook', bishop: 'The Bishop', queen: 'The Queen', knight: 'The Knight' }
+
 // ── Movement diagram ────────────────────────────────────────────────────────
 function MovementDiagram({ grid, accentColor }) {
   const cellSize = 36
@@ -74,20 +85,20 @@ function StatBar({ label, value, max = 9, color }) {
 }
 
 // ── Single piece card ────────────────────────────────────────────────────────
-function PieceCard({ piece }) {
+function PieceCard({ piece, onNav }) {
   return (
     <div style={{
-      background: '#16213e',
-      border: `1px solid ${piece.color}33`,
-      borderRadius: 16,
-      padding: '32px 28px',
+      background: 'var(--surface)',
+      border: `1px solid ${piece.color}40`,
+      borderRadius: 'var(--radius-lg)',
+      padding: '28px 26px',
       maxWidth: 480,
       width: '100%',
       margin: '0 auto',
-      boxShadow: `0 8px 40px ${piece.color}18`,
+      boxShadow: `0 14px 44px ${piece.color}1f`,
       display: 'flex',
       flexDirection: 'column',
-      gap: 24,
+      gap: 22,
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
@@ -160,6 +171,17 @@ function PieceCard({ piece }) {
         <p style={{ fontWeight: 700, fontSize: 15, color: '#f0f0f0', marginBottom: 6 }}>{piece.powerMove.name}</p>
         <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.6, margin: 0 }}>{piece.powerMove.desc}</p>
       </div>
+
+      {/* Common beginner mistake */}
+      <div style={{ background: 'rgba(224,84,84,0.08)', border: '1px solid rgba(224,84,84,0.3)', borderRadius: 10, padding: '14px 16px' }}>
+        <p className="tiny-label" style={{ color: 'var(--danger)', marginBottom: 6 }}>Common beginner mistake</p>
+        <p style={{ fontSize: 13, color: 'var(--text-soft)', lineHeight: 1.6, margin: 0 }}>{BEGINNER_MISTAKES[piece.id]}</p>
+      </div>
+
+      {/* Practice CTA */}
+      <button className={PRACTICE_LESSON[piece.id] ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%' }} onClick={() => onNav('learn')}>
+        {PRACTICE_LESSON[piece.id] ? `Practice: ${PRACTICE_LESSON[piece.id]} drill →` : 'Practice in Lessons →'}
+      </button>
     </div>
   )
 }
@@ -202,7 +224,7 @@ function PieceThumb({ piece, active, onClick }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function PieceGuide() {
+export default function PieceGuide({ onNav }) {
   const [idx, setIdx] = useState(0)
 
   function prev() { setIdx(i => (i - 1 + PIECES.length) % PIECES.length) }
@@ -212,10 +234,10 @@ export default function PieceGuide() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>Piece Guide</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>
-        Learn the role, moves, and tactical power of every chess piece.
-      </p>
+      <div className="page-header">
+        <h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Piece Guide</h1>
+        <p className="page-subtitle">Learn the role, moves, and tactical power of every chess piece.</p>
+      </div>
 
       {/* Piece thumbnail selector */}
       <div style={{
@@ -258,7 +280,7 @@ export default function PieceGuide() {
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <PieceCard piece={piece} key={piece.id} />
+          <PieceCard piece={piece} key={piece.id} onNav={onNav} />
         </div>
 
         <button
