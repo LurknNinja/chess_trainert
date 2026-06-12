@@ -4,10 +4,12 @@ import { isSoundEnabled, setSoundEnabled, sound } from '../utils/sound.js'
 const LINKS = [
   { id: 'learn',    label: 'Learn' },
   { id: 'puzzles',  label: 'Puzzles' },
-  { id: 'engine',   label: 'vs Engine' },
+  { id: 'rush',     label: 'Rush' },
+  { id: 'engine',   label: 'Play' },
   { id: 'openings', label: 'Openings' },
   { id: 'endgames', label: 'Endgames' },
   { id: 'pieces',   label: 'Pieces' },
+  { id: 'glossary', label: 'Glossary' },
   { id: 'progress', label: 'Progress' },
 ]
 
@@ -21,104 +23,61 @@ export default function Nav({ current, onNav }) {
     if (next) sound.click()
   }
 
+  const tab = (active) => ({
+    background: active ? 'rgba(91,157,255,0.16)' : 'none',
+    color: active ? '#bcd6ff' : 'var(--muted)',
+    border: active ? '1px solid rgba(91,157,255,0.4)' : '1px solid transparent',
+    borderRadius: 999,
+    padding: '8px 14px',
+    fontSize: 13,
+    fontWeight: active ? 700 : 600,
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    minHeight: 40,
+  })
+
   return (
     <nav style={{
-      background: '#16213e',
-      borderBottom: '1px solid #2a2a4a',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 0,
-      padding: '0 8px',
-      overflowX: 'auto',
-      scrollbarWidth: 'none',
-      WebkitOverflowScrolling: 'touch',
-      flexShrink: 0,
-      minHeight: 52,
+      position: 'sticky', top: 0, zIndex: 50,
+      background: 'linear-gradient(180deg, rgba(13,19,38,0.92), rgba(13,19,38,0.72))',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid var(--border)',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.25)',
     }}>
-      {/* Logo / home button */}
-      <button
-        onClick={() => onNav('home')}
-        style={{
-          background: 'none',
-          color: current === 'home' ? '#4f8ef7' : '#e0e0e0',
-          borderBottom: current === 'home' ? '2px solid #4f8ef7' : '2px solid transparent',
-          borderRadius: 0,
-          padding: '14px 14px',
-          fontSize: 16,
-          fontWeight: 700,
-          flexShrink: 0,
-          whiteSpace: 'nowrap',
-          minHeight: 52,
-          letterSpacing: '-0.01em',
-        }}
-      >
-        ♟ Chess Trainer
-      </button>
-
-      {/* Divider */}
-      <div style={{ width: 1, height: 24, background: '#2a2a4a', flexShrink: 0, margin: '0 4px' }} />
-
-      {/* Navigation tabs */}
-      {LINKS.map(({ id, label }) => (
-        <button
-          key={id}
-          onClick={() => onNav(id)}
-          style={{
-            background: 'none',
-            color: current === id ? '#4f8ef7' : '#aaa',
-            borderBottom: current === id ? '2px solid #4f8ef7' : '2px solid transparent',
-            borderRadius: 0,
-            padding: '14px 12px',
-            fontSize: 13,
-            fontWeight: current === id ? 700 : 500,
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-            minHeight: 52,
-            transition: 'color 0.15s',
-          }}
-        >
-          {label}
+      <div style={{
+        maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center',
+        gap: 8, padding: '8px 14px', overflowX: 'auto', scrollbarWidth: 'none', minHeight: 56,
+      }}>
+        {/* Brand */}
+        <button onClick={() => onNav('home')}
+          style={{ background: 'none', padding: '6px 8px', flexShrink: 0, minHeight: 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: current === 'home' ? '#bcd6ff' : 'var(--text)', letterSpacing: '-0.02em' }}>
+            ♟ Chess Trainer
+          </span>
+          <span className="nav-tagline" style={{ fontSize: 10, color: 'var(--muted-2)', fontWeight: 600, letterSpacing: '0.04em' }}>Train smarter</span>
         </button>
-      ))}
 
-      {/* Sound toggle + settings, pinned to the right */}
-      <button
-        onClick={toggleSound}
-        title={soundOn ? 'Sound on' : 'Sound off'}
-        aria-label={soundOn ? 'Mute sound' : 'Enable sound'}
-        style={{
-          marginLeft: 'auto',
-          background: 'none',
-          color: soundOn ? '#4f8ef7' : '#666',
-          borderRadius: 0,
-          padding: '14px 10px',
-          fontSize: 16,
-          flexShrink: 0,
-          minHeight: 52,
-        }}
-      >
-        {soundOn ? '🔊' : '🔇'}
-      </button>
-      <button
-        onClick={() => onNav('settings')}
-        title="Settings"
-        aria-label="Settings"
-        style={{
-          background: 'none',
-          color: current === 'settings' ? '#4f8ef7' : '#aaa',
-          borderBottom: current === 'settings' ? '2px solid #4f8ef7' : '2px solid transparent',
-          borderRadius: 0,
-          padding: '14px 12px',
-          fontSize: 16,
-          flexShrink: 0,
-          minHeight: 52,
-        }}
-      >
-        ⚙
-      </button>
+        <div style={{ width: 1, height: 26, background: 'var(--border)', flexShrink: 0, margin: '0 2px' }} />
 
-      {/* Hide scrollbar for Webkit */}
-      <style>{`nav::-webkit-scrollbar { display: none; }`}</style>
+        {LINKS.map(({ id, label }) => (
+          <button key={id} onClick={() => onNav(id)} style={tab(current === id)} aria-current={current === id ? 'page' : undefined}>
+            {label}
+          </button>
+        ))}
+
+        <button onClick={toggleSound} title={soundOn ? 'Sound on' : 'Sound off'} aria-label={soundOn ? 'Mute sound' : 'Enable sound'}
+          style={{ marginLeft: 'auto', background: 'none', color: soundOn ? 'var(--accent)' : 'var(--muted-2)', padding: '8px 10px', fontSize: 16, flexShrink: 0, minHeight: 40 }}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
+        <button onClick={() => onNav('settings')} title="Settings" aria-label="Settings"
+          style={{ background: current === 'settings' ? 'rgba(91,157,255,0.16)' : 'none', color: current === 'settings' ? '#bcd6ff' : 'var(--muted)', borderRadius: 999, padding: '8px 10px', fontSize: 16, flexShrink: 0, minHeight: 40 }}>
+          ⚙
+        </button>
+      </div>
+      <style>{`
+        nav > div::-webkit-scrollbar { display: none; }
+        @media (max-width: 760px) { .nav-tagline { display: none; } }
+      `}</style>
     </nav>
   )
 }

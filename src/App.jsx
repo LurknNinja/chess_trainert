@@ -17,24 +17,33 @@ const MODES = { home: Home, learn: Learn, puzzles: Puzzles, rush: PuzzleRush, en
 export default function App() {
   const [mode, setMode] = useState('home')
   const trainModeRef = useRef(false)
+  const reviewModeRef = useRef(false)
 
   function handleNav(target) {
     if (target === 'puzzles-train') {
       trainModeRef.current = true
+      reviewModeRef.current = false
+      setMode('puzzles')
+    } else if (target === 'puzzles-review') {
+      reviewModeRef.current = true
+      trainModeRef.current = false
       setMode('puzzles')
     } else {
       trainModeRef.current = false
+      reviewModeRef.current = false
       setMode(target)
     }
   }
 
   const Mode = MODES[mode] || Home
-  const extraProps = mode === 'puzzles' ? { initialTrainMode: trainModeRef.current } : {}
+  const extraProps = mode === 'puzzles'
+    ? { initialTrainMode: trainModeRef.current, initialReviewMode: reviewModeRef.current }
+    : {}
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-shell">
       <Nav current={mode} onNav={handleNav} />
-      <main style={{ flex: 1, padding: '24px 16px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
+      <main className="page">
         <Mode onNav={handleNav} {...extraProps} />
       </main>
     </div>

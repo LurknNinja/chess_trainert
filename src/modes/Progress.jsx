@@ -1,57 +1,30 @@
 import { useState, useEffect } from 'react'
 import { getStats, clearStats } from '../hooks/useStats.js'
 import { PUZZLES } from '../data/puzzles.js'
+import { ALL_LESSONS } from '../data/lessons.js'
+import StatCard from '../components/StatCard.jsx'
+import CoachPanel from '../components/CoachPanel.jsx'
+import ProgressBar from '../components/ProgressBar.jsx'
 
 const ALL_THEMES = [...new Set(PUZZLES.map(p => p.theme))]
 const LEVEL_THRESHOLD = 0.75
 
-function solveRate(bucket) {
-  if (!bucket || bucket.attempts === 0) return null
-  return bucket.solved / bucket.attempts
-}
-
-function barColor(rate) {
-  if (rate === null) return '#2a2a4a'
-  if (rate < 0.5) return '#e05454'
-  if (rate < LEVEL_THRESHOLD) return '#f0c040'
-  return '#34c37a'
-}
+const solveRate = (b) => (!b || b.attempts === 0 ? null : b.solved / b.attempts)
+const barColor = (rate) => rate === null ? 'var(--surface-3)' : rate < 0.5 ? 'var(--danger)' : rate < LEVEL_THRESHOLD ? 'var(--warning)' : 'var(--success)'
 
 function ThemeBar({ theme, bucket, rate }) {
   const pct = rate !== null ? Math.round(rate * 100) : null
-  const color = barColor(rate)
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
-        <span style={{ color: rate === null ? '#444' : '#ccc' }}>{theme}</span>
-        <span style={{ color: '#555', fontSize: 12 }}>
-          {pct !== null ? `${pct}%` : '—'}
-          {bucket?.attempts ? ` · ${bucket.attempts} attempt${bucket.attempts !== 1 ? 's' : ''}` : ''}
+        <span style={{ color: rate === null ? 'var(--muted-2)' : 'var(--text-soft)' }}>{theme}</span>
+        <span className="muted" style={{ fontSize: 12 }}>
+          {pct !== null ? `${pct}%` : '—'}{bucket?.attempts ? ` · ${bucket.attempts} tried` : ''}
         </span>
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: '#1e2a42', overflow: 'hidden' }}>
-        {pct !== null && (
-          <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.4s ease' }} />
-        )}
+      <div className="progress-bar">
+        {pct !== null && <div className="progress-fill" style={{ width: `${pct}%`, background: barColor(rate) }} />}
       </div>
-    </div>
-  )
-}
-
-function NextLevelRow({ theme, rate }) {
-  const pct = Math.round(rate * 100)
-  const needed = Math.max(0, Math.round((LEVEL_THRESHOLD - rate) * 100))
-  const ready = rate >= LEVEL_THRESHOLD
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 13 }}>
-      <span style={{ width: 16, textAlign: 'center', color: ready ? '#34c37a' : '#e05454', flexShrink: 0 }}>
-        {ready ? '✓' : '✗'}
-      </span>
-      <span style={{ minWidth: 160, color: '#ccc' }}>{theme}</span>
-      <span style={{ color: barColor(rate), fontWeight: 600 }}>{pct}%</span>
-      <span style={{ color: '#555', fontSize: 12 }}>
-        {ready ? 'Ready' : `Need ${needed}% more`}
-      </span>
     </div>
   )
 }
@@ -68,15 +41,15 @@ function RatingChart({ history }) {
   const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.rating).toFixed(1)}`).join(' ')
   const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - pad} L${x(0).toFixed(1)},${H - pad} Z`
   const up = ratings[ratings.length - 1] >= ratings[0]
-  const color = up ? '#34c37a' : '#e0843c'
+  const color = up ? 'var(--success)' : '#e0843c'
   return (
-    <div style={{ background: '#16213e', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+    <div className="panel">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <p style={{ fontSize: 11, color: '#888', fontWeight: 700, letterSpacing: '0.05em' }}>RATING OVER TIME</p>
+        <p className="tiny-label">Rating over time</p>
         <p style={{ fontSize: 12, color }}>{up ? '▲' : '▼'} {ratings[0]} → {ratings[ratings.length - 1]}</p>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: 'block' }}>
-        <path d={area} fill={color} fillOpacity="0.12" />
+        <path d={area} fill={color} fillOpacity="0.14" />
         <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       </svg>
     </div>
@@ -86,147 +59,126 @@ function RatingChart({ history }) {
 export default function Progress({ onNav }) {
   const [stats, setStats] = useState(() => getStats())
   const [confirmReset, setConfirmReset] = useState(false)
-
   useEffect(() => { setStats(getStats()) }, [])
 
   const { themeStats } = stats
   const games = stats.games || { wins: 0, losses: 0, draws: 0 }
   const totalGames = games.wins + games.losses + games.draws
+  const missedCount = Object.keys(stats.missed || {}).length
+  const lessonsDone = Object.keys(stats.lessonsCompleted || {}).length
   const hasData = Object.keys(themeStats).length > 0 || totalGames > 0 || (stats.puzzlesSolved || 0) > 0
 
-  const StatCards = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 24 }}>
-      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
-        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>PUZZLE RATING</p>
-        <p style={{ fontSize: 26, fontWeight: 800, color: '#4f8ef7' }}>{stats.rating ?? 800}</p>
-      </div>
-      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
-        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>PUZZLES SOLVED</p>
-        <p style={{ fontSize: 26, fontWeight: 800, color: '#e0e0e0' }}>{stats.puzzlesSolved || 0}</p>
-      </div>
-      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
-        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>🔥 BEST STREAK</p>
-        <p style={{ fontSize: 26, fontWeight: 800, color: '#f0c040' }}>{stats.bestStreak || 0}</p>
-      </div>
-      <div style={{ background: '#16213e', borderRadius: 10, padding: 16 }}>
-        <p style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 4 }}>ENGINE RECORD</p>
-        <p style={{ fontSize: 18, fontWeight: 800, color: '#e0e0e0' }}>
-          <span style={{ color: '#34c37a' }}>{games.wins}W</span> · <span style={{ color: '#e05454' }}>{games.losses}L</span> · <span style={{ color: '#888' }}>{games.draws}D</span>
-        </p>
-      </div>
-    </div>
-  )
+  const themeData = ALL_THEMES.map(theme => ({ theme, bucket: themeStats[theme] ?? null, rate: solveRate(themeStats[theme]) }))
+  const attempted = themeData.filter(d => d.rate !== null)
+  const unattempted = themeData.filter(d => d.rate === null)
+  const sorted = [...attempted.slice().sort((a, b) => a.rate - b.rate), ...unattempted]
+  const strengths = attempted.filter(d => d.rate >= LEVEL_THRESHOLD).sort((a, b) => b.rate - a.rate)
+  const gaps = attempted.filter(d => d.rate < LEVEL_THRESHOLD).sort((a, b) => a.rate - b.rate)
+  const rating = stats.rating ?? 800
+
+  // ── Recommended next actions ──────────────────────────────────────────────
+  const recs = []
+  if (missedCount > 0) recs.push({ tone: 'warning', icon: '↻', title: `Review ${missedCount} missed puzzle${missedCount > 1 ? 's' : ''}`, text: 'Clean these up first — repetition is where the rating gains hide.', cta: 'Review mistakes', target: 'puzzles-review' })
+  if (gaps.length) { const w = gaps[0]; recs.push({ tone: 'coach', icon: '🎯', title: `Train ${w.theme}`, text: `Your lowest theme is ${w.theme} at ${Math.round(w.rate * 100)}%. Train this next.`, cta: `Train ${w.theme}`, target: 'puzzles-train' }) }
+  if ((stats.streak || 0) > 0) recs.push({ tone: 'good', icon: '🔥', title: `Keep your ${stats.streak}-puzzle streak alive`, text: 'Solve one clean puzzle to keep the momentum going.', cta: 'Daily puzzle', target: 'puzzles' })
+  if (!hasData || (lessonsDone < ALL_LESSONS.length && (stats.puzzlesSolved || 0) < 5)) recs.push({ tone: 'info', icon: '🎓', title: 'Build your foundation', text: 'Start with a few lessons and 5 beginner puzzles.', cta: 'Go to lessons', target: 'learn' })
 
   if (!hasData) {
     return (
       <div>
-        <h2 style={{ marginBottom: 8 }}>My Progress</h2>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 32 }}>Track your weaknesses and path to 900 ELO.</p>
-        <div style={{ background: '#16213e', borderRadius: 10, padding: 32, textAlign: 'center', maxWidth: 400 }}>
-          <p style={{ fontSize: 32, marginBottom: 12 }}>📈</p>
-          <p style={{ fontWeight: 700, marginBottom: 8 }}>No data yet</p>
-          <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>
-            Solve some puzzles and your performance stats will appear here.
-          </p>
-          <button className="btn-primary" onClick={() => onNav('puzzles')}>Go to Puzzles →</button>
-        </div>
+        <div className="page-header"><h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>My Progress</h1>
+          <p className="page-subtitle">Track strengths, gaps, and your next goal.</p></div>
+        <CoachPanel tone="info" icon="📈" eyebrow="No data yet" title="Let’s get a baseline"
+          actions={<>
+            <button className="btn-primary" onClick={() => onNav('learn')}>Start lessons</button>
+            <button className="btn-secondary" onClick={() => onNav('puzzles')}>Solve puzzles</button>
+          </>}>
+          Solve a few puzzles and play a game — your rating, streaks, and theme mastery will show up here with a personalised training plan.
+        </CoachPanel>
       </div>
     )
   }
 
-  const themeData = ALL_THEMES.map(theme => ({
-    theme,
-    bucket: themeStats[theme] ?? null,
-    rate: solveRate(themeStats[theme]),
-  }))
-
-  const attempted = themeData.filter(d => d.rate !== null)
-  const unattempted = themeData.filter(d => d.rate === null)
-  const sorted = [
-    ...attempted.sort((a, b) => a.rate - b.rate),
-    ...unattempted,
-  ]
-
-  const top3 = attempted.slice().sort((a, b) => a.rate - b.rate).slice(0, 3)
-  const readyCount = attempted.filter(d => d.rate >= LEVEL_THRESHOLD).length
-  const overallPct = attempted.length
-    ? Math.round(attempted.reduce((s, d) => s + d.rate, 0) / attempted.length * 100)
-    : 0
-
   return (
-    <div>
-      <h2 style={{ marginBottom: 8 }}>My Progress</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 20 }}>
-        {attempted.length} of {ALL_THEMES.length} themes attempted · overall solve rate {overallPct}%
-      </p>
-
-      <StatCards />
-      <RatingChart history={stats.ratingHistory} />
-
-      {/* Top weaknesses callout */}
-      {top3.length > 0 && top3[0].rate < LEVEL_THRESHOLD && (
-        <div style={{ background: '#1e1016', border: '1px solid #e0545433', borderRadius: 10, padding: 16, marginBottom: 20 }}>
-          <p style={{ fontSize: 11, color: '#e05454', fontWeight: 700, marginBottom: 6, letterSpacing: '0.05em' }}>YOUR BIGGEST GAPS</p>
-          <p style={{ fontSize: 14, color: '#e0e0e0' }}>
-            {top3.filter(d => d.rate < LEVEL_THRESHOLD).map(d => `${d.theme} (${Math.round(d.rate * 100)}%)`).join('  ·  ')}
-          </p>
-        </div>
-      )}
-
-      {/* 900 ELO progress summary */}
-      <div style={{ background: '#16213e', borderRadius: 10, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <div>
-          <p style={{ fontSize: 11, color: '#888', marginBottom: 4, fontWeight: 600 }}>PATH TO 900 ELO</p>
-          <p style={{ fontSize: 22, fontWeight: 700, color: readyCount === attempted.length && attempted.length > 0 ? '#34c37a' : '#e0e0e0' }}>
-            {readyCount} / {attempted.length} themes ready
-          </p>
-          <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>75%+ solve rate per theme</p>
-        </div>
-        <button
-          className="btn-primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={() => onNav('puzzles-train')}
-        >
-          Train My Weaknesses →
-        </button>
+    <div className="dashboard-grid" style={{ gap: 24 }}>
+      <div className="page-header" style={{ marginBottom: 0 }}>
+        <h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>My Progress</h1>
+        <p className="page-subtitle">{attempted.length} of {ALL_THEMES.length} themes trained · overall solve rate {attempted.length ? Math.round(attempted.reduce((s, d) => s + d.rate, 0) / attempted.length * 100) : 0}%</p>
       </div>
 
-      {/* Theme performance bars */}
-      <section style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, color: '#888', fontWeight: 600, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Theme Performance</h3>
-        {sorted.map(({ theme, bucket, rate }) => (
-          <ThemeBar key={theme} theme={theme} bucket={bucket} rate={rate} />
-        ))}
-      </section>
+      {/* Stats */}
+      <div className="stat-row">
+        <StatCard label="Puzzle rating" value={rating} color="var(--accent)" accent="var(--accent)" />
+        <StatCard label="Puzzles solved" value={stats.puzzlesSolved || 0} />
+        <StatCard label="🔥 Current streak" value={stats.streak || 0} color="var(--gold)" />
+        <StatCard label="Best streak" value={stats.bestStreak || 0} />
+        <StatCard label="Engine record" value={<span style={{ fontSize: 18 }}><span style={{ color: 'var(--success)' }}>{games.wins}W</span> <span style={{ color: 'var(--danger)' }}>{games.losses}L</span> <span className="muted">{games.draws}D</span></span>} />
+      </div>
 
-      {/* Path to 900 detail */}
-      {attempted.length > 0 && (
-        <section style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 14, color: '#888', fontWeight: 600, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            900 ELO Checklist
-          </h3>
-          {attempted.sort((a, b) => a.rate - b.rate).map(({ theme, rate }) => (
-            <NextLevelRow key={theme} theme={theme} rate={rate} />
-          ))}
+      {/* Training plan */}
+      {recs.length > 0 && (
+        <section>
+          <p className="section-title">Training plan — do these next</p>
+          <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+            {recs.slice(0, 3).map((r, i) => (
+              <CoachPanel key={i} tone={r.tone} icon={r.icon} title={r.title}
+                actions={<button className="btn-primary" onClick={() => onNav(r.target)}>{r.cta} →</button>}>
+                {r.text}
+              </CoachPanel>
+            ))}
+          </div>
         </section>
       )}
 
-      {/* Reset stats */}
-      <div style={{ marginTop: 8 }}>
+      <RatingChart history={stats.ratingHistory} />
+
+      {/* Milestone */}
+      <section className="panel" style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <p className="tiny-label">Next milestone</p>
+          <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, margin: '4px 0 10px' }}>900 Puzzle Rating</p>
+          <ProgressBar value={Math.min(rating, 900) - 400} max={500} />
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>{rating >= 900 ? '🏆 Reached! Set your sights higher.' : `${900 - rating} rating points to go.`}</p>
+        </div>
+        <button className="btn-primary" onClick={() => onNav('puzzles-train')}>Train weaknesses →</button>
+      </section>
+
+      {/* Strengths & gaps */}
+      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+        <div className="panel">
+          <p className="section-title" style={{ color: 'var(--success)' }}>Strengths</p>
+          {strengths.length ? strengths.slice(0, 5).map(d => (
+            <div key={d.theme} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '4px 0' }}>
+              <span style={{ color: 'var(--text-soft)' }}>{d.theme}</span><span style={{ color: 'var(--success)', fontWeight: 700 }}>{Math.round(d.rate * 100)}%</span>
+            </div>
+          )) : <p className="muted" style={{ fontSize: 13 }}>No mastered themes yet — keep training!</p>}
+        </div>
+        <div className="panel">
+          <p className="section-title" style={{ color: 'var(--danger)' }}>Biggest gaps</p>
+          {gaps.length ? gaps.slice(0, 5).map(d => (
+            <div key={d.theme} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '4px 0' }}>
+              <span style={{ color: 'var(--text-soft)' }}>{d.theme}</span><span style={{ color: barColor(d.rate), fontWeight: 700 }}>{Math.round(d.rate * 100)}%</span>
+            </div>
+          )) : <p className="muted" style={{ fontSize: 13 }}>No weak themes — excellent!</p>}
+        </div>
+      </div>
+
+      {/* Theme mastery */}
+      <section className="panel">
+        <p className="section-title">Theme mastery</p>
+        {sorted.map(({ theme, bucket, rate }) => <ThemeBar key={theme} theme={theme} bucket={bucket} rate={rate} />)}
+      </section>
+
+      {/* Reset (de-emphasised) */}
+      <div>
         {confirmReset ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: '#888' }}>Reset all stats?</span>
-            <button className="btn-danger" style={{ padding: '6px 14px', fontSize: 12 }} onClick={() => { clearStats(); setStats(getStats()); setConfirmReset(false) }}>
-              Yes, reset
-            </button>
-            <button className="btn-secondary" style={{ padding: '6px 14px', fontSize: 12 }} onClick={() => setConfirmReset(false)}>
-              Cancel
-            </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="muted" style={{ fontSize: 13 }}>Reset all stats? This can’t be undone.</span>
+            <button className="btn-danger" style={{ padding: '6px 14px', minHeight: 36, fontSize: 12 }} onClick={() => { clearStats(); setStats(getStats()); setConfirmReset(false) }}>Yes, reset</button>
+            <button className="btn-secondary" style={{ padding: '6px 14px', minHeight: 36, fontSize: 12 }} onClick={() => setConfirmReset(false)}>Cancel</button>
           </div>
         ) : (
-          <button className="btn-secondary" style={{ fontSize: 12, padding: '6px 14px', opacity: 0.5 }} onClick={() => setConfirmReset(true)}>
-            Reset Stats
-          </button>
+          <button className="btn-ghost" style={{ fontSize: 12, padding: '6px 14px', minHeight: 36, opacity: 0.6 }} onClick={() => setConfirmReset(true)}>Reset stats</button>
         )}
       </div>
     </div>

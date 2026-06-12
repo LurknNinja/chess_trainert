@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from 'react'
 import { Chess } from 'chess.js'
 import Board from '../components/Board.jsx'
+import CoachPanel from '../components/CoachPanel.jsx'
+import ProgressBar from '../components/ProgressBar.jsx'
 import { LESSON_GROUPS, ALL_LESSONS } from '../data/lessons.js'
 import { recordLesson, getStats } from '../hooks/useStats.js'
 import { sound, playMoveSound } from '../utils/sound.js'
@@ -90,33 +92,31 @@ export default function Learn() {
     const total = ALL_LESSONS.length
     const completed = Object.keys(done).filter(k => ALL_LESSONS.some(l => l.id === k)).length
     return (
-      <div>
-        <h2 style={{ marginBottom: 6 }}>Learn Chess</h2>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>
-          Interactive lessons from your first moves to winning tactics. Play the moves on the board.
-        </p>
-        <div style={{ height: 6, borderRadius: 4, background: '#1e2a42', overflow: 'hidden', marginBottom: 28, maxWidth: 420 }}>
-          <div style={{ width: `${Math.round((completed / total) * 100)}%`, height: '100%', background: '#34c37a', transition: 'width 0.4s' }} />
+      <div className="dashboard-grid" style={{ gap: 24 }}>
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Learn Chess</h1>
+          <p className="page-subtitle">A guided path from your first moves to winning tactics — play every idea on the board.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14, maxWidth: 460 }}>
+            <div style={{ flex: 1 }}><ProgressBar value={completed} max={total} color="var(--success)" /></div>
+            <span className="muted" style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>{completed} / {total} done</span>
+          </div>
         </div>
         {LESSON_GROUPS.map(group => (
-          <section key={group.level} style={{ marginBottom: 28 }}>
-            <h3 style={{ fontSize: 14, color: '#4f8ef7', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{group.level}</h3>
-            <p style={{ color: '#777', fontSize: 13, marginBottom: 14 }}>{group.blurb}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+          <section key={group.level}>
+            <p className="section-title" style={{ color: 'var(--accent)' }}>{group.level}</p>
+            <p className="muted" style={{ fontSize: 13, margin: '-6px 0 14px' }}>{group.blurb}</p>
+            <div className="mode-grid">
               {group.lessons.map(l => {
                 const isDone = !!done[l.id]
                 return (
-                  <button key={l.id} onClick={() => open(l.id)}
-                    style={{
-                      background: isDone ? '#13261b' : '#16213e',
-                      border: `1px solid ${isDone ? '#34c37a55' : '#2a2a4a'}`,
-                      borderRadius: 10, padding: 16, textAlign: 'left', color: '#e0e0e0',
-                      display: 'flex', flexDirection: 'column', gap: 6, minHeight: 72,
-                    }}>
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>
-                      {isDone && <span style={{ color: '#34c37a', marginRight: 6 }}>✓</span>}{l.title}
-                    </span>
-                    <span style={{ fontSize: 11, color: '#777', textTransform: 'capitalize' }}>{l.mode === 'collect' ? 'Movement drill' : 'Guided'}</span>
+                  <button key={l.id} className="mode-card" onClick={() => open(l.id)} style={isDone ? { borderColor: 'rgba(52,195,122,0.4)' } : undefined}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className={`pill ${l.mode === 'collect' ? 'pill-blue' : 'pill-muted'}`}>{l.mode === 'collect' ? 'Movement drill' : 'Guided'}</span>
+                      {isDone
+                        ? <span className="pill pill-green">✓ Complete</span>
+                        : <span className="pill pill-muted">Start</span>}
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: 15, marginTop: 4 }}>{l.title}</span>
                   </button>
                 )
               })}
@@ -127,10 +127,10 @@ export default function Learn() {
     )
   }
 
-  return <LessonView key={lesson.id} lesson={lesson} onBack={back} onComplete={complete} />
+  return <LessonView key={lesson.id} lesson={lesson} onBack={back} onComplete={complete} onOpen={open} />
 }
 
-function LessonView({ lesson, onBack, onComplete }) {
+function LessonView({ lesson, onBack, onComplete, onOpen }) {
   const isCollect = lesson.mode === 'collect'
 
   // ── Collect-mode state ─────────────────────────────────────────────────────
@@ -199,7 +199,7 @@ function LessonView({ lesson, onBack, onComplete }) {
     const want = step.move
     const tried = sourceSquare + targetSquare
     if (tried !== want.slice(0, 4)) {
-      setMsg('Not quite — try the move described above.')
+      setMsg('Not quite. Read the instruction again and look for the piece that matches the idea.')
       setMsgKind('bad'); sound.wrong()
       return false
     }
@@ -276,49 +276,35 @@ function LessonView({ lesson, onBack, onComplete }) {
   const idx = ALL_LESSONS.findIndex(l => l.id === lesson.id)
   const nextLesson = ALL_LESSONS[idx + 1]
 
+  const stepMax = isCollect ? (lesson.targets?.length || 1) : lesson.steps.length
+  const stepNow = done ? stepMax : isCollect ? (stepMax - remaining.size) : stepIdx
+
   return (
     <div>
-      <button onClick={onBack} style={{ background: 'none', color: '#888', padding: '4px 0', marginBottom: 8, minHeight: 0 }}>← All lessons</button>
-      <h2 style={{ marginBottom: 2 }}>{lesson.title}</h2>
-      <p style={{ color: '#666', fontSize: 12, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lesson.level} · {isCollect ? 'Movement' : 'Guided lesson'}</p>
-      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-        <div style={{ width: 440, maxWidth: '100%' }}>
-          <Board
-            position={position}
-            orientation="white"
-            onDrop={onDrop}
-            allowDragging={!done && !busy}
-            squareStyles={squareStyles}
-            getLegalTargets={getLegalTargets}
-            id="learn"
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{
-            background: msgKind === 'good' ? '#13261b' : msgKind === 'bad' ? '#2a1414' : '#16213e',
-            border: `1px solid ${msgKind === 'good' ? '#34c37a55' : msgKind === 'bad' ? '#e0545455' : '#2a2a4a'}`,
-            borderRadius: 10, padding: 18, marginBottom: 16,
-          }}>
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: msgKind === 'bad' ? '#f0a0a0' : '#e0e0e0' }}>{msg}</p>
-            {isCollect && !done && (
-              <p style={{ fontSize: 12, color: '#888', marginTop: 10 }}>Targets left: {remaining.size}</p>
-            )}
-            {!isCollect && !done && (
-              <p style={{ fontSize: 12, color: '#888', marginTop: 10 }}>Step {stepIdx + 1} of {lesson.steps.length}</p>
-            )}
+      <button className="btn-ghost" onClick={onBack} style={{ marginBottom: 12, padding: '6px 12px', minHeight: 36 }}>← All lessons</button>
+      <h1 className="page-title" style={{ fontSize: 'var(--fs-xl)', marginBottom: 2 }}>{lesson.title}</h1>
+      <p className="tiny-label" style={{ marginBottom: 16 }}>{lesson.level} · {isCollect ? 'Movement drill' : 'Guided lesson'}</p>
+      <div className="layout-two-col">
+        <div className="layout-board">
+          <Board position={position} orientation="white" onDrop={onDrop} allowDragging={!done && !busy} squareStyles={squareStyles} getLegalTargets={getLegalTargets} id="learn" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+            <div style={{ flex: 1 }}><ProgressBar value={stepNow} max={stepMax} color={done ? 'var(--success)' : undefined} /></div>
+            <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+              {isCollect ? `${remaining.size} target${remaining.size !== 1 ? 's' : ''} left` : `Step ${Math.min(stepIdx + 1, stepMax)} / ${stepMax}`}
+            </span>
           </div>
-          {done && (
-            <div style={{ marginBottom: 16, padding: 14, background: '#13261b', borderRadius: 10, border: '1px solid #34c37a55' }}>
-              <p style={{ color: '#34c37a', fontWeight: 700, fontSize: 14 }}>✓ Lesson complete!</p>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <CoachPanel
+            tone={done ? 'good' : msgKind === 'bad' ? 'bad' : msgKind === 'good' ? 'good' : 'info'}
+            icon={done ? '🎉' : msgKind === 'bad' ? '💡' : '♟'}
+            eyebrow={done ? 'Lesson complete' : msgKind === 'bad' ? 'Try again' : 'Your move'}>
+            <p>{msg}</p>
+          </CoachPanel>
+          <div className="button-row">
             <button className="btn-secondary" onClick={reset}>Restart</button>
-            {done && (
-              <button className="btn-primary" onClick={onBack}>
-                {nextLesson ? 'Back to lessons →' : 'Finish →'}
-              </button>
-            )}
+            {done && nextLesson && <button className="btn-primary" onClick={() => onOpen(nextLesson.id)}>Next lesson →</button>}
+            {done && !nextLesson && <button className="btn-primary" onClick={onBack}>Finish →</button>}
           </div>
         </div>
       </div>
