@@ -6,6 +6,7 @@ const LINKS = [
   { id: 'puzzles',  label: 'Puzzles' },
   { id: 'rush',     label: 'Rush' },
   { id: 'engine',   label: 'Play' },
+  { id: 'threats',  label: 'Threats' },
   { id: 'openings', label: 'Openings' },
   { id: 'endgames', label: 'Endgames' },
   { id: 'pieces',   label: 'Pieces' },
