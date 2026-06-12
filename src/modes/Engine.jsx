@@ -12,11 +12,11 @@ const REVIEW_DEPTH = 12       // search depth per position during game review
 const REVIEW_TIMEOUT = 2500   // ms watchdog per position (keeps review from stalling)
 
 const LEVELS = [
-  { label: 'Beginner',     skill: 0,  movetime: 50,   elo: 800  },
-  { label: 'Casual',       skill: 3,  movetime: 120,  elo: 1000 },
-  { label: 'Intermediate', skill: 8,  movetime: 300,  elo: 1400 },
-  { label: 'Advanced',     skill: 14, movetime: 900,  elo: 1900 },
-  { label: 'Master',       skill: 20, movetime: 2000, elo: 2400 },
+  { label: 'Beginner',     persona: 'Blunder Buddy', emoji: '🐣', skill: 0,  movetime: 50,   elo: 800,  desc: 'Makes simple mistakes. Great for learning checkmates and not hanging pieces.' },
+  { label: 'Casual',       persona: 'Greedy Goblin', emoji: '🟢', skill: 3,  movetime: 120,  elo: 1000, desc: 'Plays natural moves but misses tactics. Good for building confidence.' },
+  { label: 'Intermediate', persona: 'Tactic Goblin', emoji: '🗡️', skill: 8,  movetime: 300,  elo: 1400, desc: 'Punishes loose pieces and weak king safety.' },
+  { label: 'Advanced',     persona: 'Opening Bully',  emoji: '📐', skill: 14, movetime: 900,  elo: 1900, desc: 'Tests your calculation and opening discipline.' },
+  { label: 'Master',       persona: 'Stockfish',      emoji: '🧊', skill: 20, movetime: 2000, elo: 2400, desc: 'Stockfish stops being polite.' },
 ]
 
 const START_FEN = new Chess().fen()
@@ -69,9 +69,16 @@ function CapturedRow({ pieces, color, advantage }) {
   )
 }
 
-function ReviewPanel({ review, playerColor, onJump, onFlip, onNewGame }) {
+function ReviewPanel({ review, playerColor, onJump, onFlip, onNewGame, onNav }) {
   const { moves, accuracy, counts, ply } = review
   const myColor = playerColor === 'white' ? 'w' : 'b'
+  const lesson = counts.blunder > 0
+    ? 'Your main goal: avoid one-move blunders. Before each move, ask "is anything of mine hanging?"'
+    : counts.mistake > 0
+      ? 'Your main goal: check a few candidate moves before committing.'
+      : counts.inaccuracy > 0
+        ? 'Solid game. Sharpen the small positional decisions next.'
+        : 'Clean game! Consider bumping up the difficulty.'
   const rows = []
 
   for (let i = 0; i < moves.length; i += 2) {
@@ -134,6 +141,11 @@ function ReviewPanel({ review, playerColor, onJump, onFlip, onNewGame }) {
         </div>
       </div>
 
+      <div className="coach-card coach compact" style={{ marginBottom: 12 }}>
+        <span className="tiny-label" style={{ color: 'var(--gold)' }}>Biggest takeaway</span>
+        <p style={{ fontSize: 13, color: 'var(--text-soft)', lineHeight: 1.5 }}>{lesson}</p>
+      </div>
+
       <div style={{ background: '#16213e', borderRadius: 10, padding: '12px 14px', marginBottom: 12, maxHeight: 200, overflowY: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
@@ -155,14 +167,18 @@ function ReviewPanel({ review, playerColor, onJump, onFlip, onNewGame }) {
         <button className="btn-secondary" onClick={onFlip}>⇅ Flip</button>
       </div>
 
-      <button className="btn-primary" style={{ width: '100%' }} onClick={onNewGame}>
+      <button className="btn-primary" style={{ width: '100%', marginBottom: 8 }} onClick={onNewGame}>
         New Game
       </button>
+      <div className="button-row">
+        <button className="btn-secondary" onClick={() => onNav('puzzles')}>Train tactics</button>
+        <button className="btn-secondary" onClick={() => onNav('progress')}>Progress</button>
+      </div>
     </div>
   )
 }
 
-export default function Engine() {
+export default function Engine({ onNav }) {
   const [level, setLevel] = useState(2)
   const [playerColor, setPlayerColor] = useState('white')
   const [fen, setFen] = useState(START_FEN)
@@ -554,54 +570,42 @@ export default function Engine() {
   if (!started) {
     return (
       <div>
-        <h2 style={{ marginBottom: 20 }}>Play vs Engine</h2>
-        <div style={{ background: '#16213e', borderRadius: 10, padding: 24, maxWidth: 420 }}>
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ marginBottom: 8, fontWeight: 600 }}>Your color</p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {['white', 'black'].map(c => (
-                <button
-                  key={c}
-                  onClick={() => setPlayerColor(c)}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: 6,
-                    background: playerColor === c ? '#4f8ef7' : '#2a2a4a',
-                    color: playerColor === c ? '#fff' : '#aaa',
-                    fontWeight: 600,
-                  }}
-                >
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ marginBottom: 8, fontWeight: 600 }}>Difficulty</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {LEVELS.map((l, i) => (
-                <button
-                  key={i}
-                  onClick={() => setLevel(i)}
-                  style={{
-                    textAlign: 'left',
-                    padding: '10px 14px',
-                    borderRadius: 6,
-                    background: level === i ? '#4f8ef7' : '#2a2a4a',
-                    color: level === i ? '#fff' : '#aaa',
-                  }}
-                >
-                  {l.label} <span style={{ opacity: 0.6, fontSize: 12 }}>~{l.elo}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button className="btn-success" style={{ width: '100%', padding: 12, fontSize: 15 }} onClick={startGame}>
-            Start Game
-          </button>
+        <div className="page-header">
+          <h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Choose your coach game</h1>
+          <p className="page-subtitle">Pick an opponent, play a full game, then review your mistakes together.</p>
         </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <p className="section-title">Play as</p>
+          <div className="button-row">
+            {['white', 'black'].map(c => (
+              <button key={c} className={playerColor === c ? 'btn-primary' : 'btn-secondary'} onClick={() => setPlayerColor(c)}>
+                {c === 'white' ? '♔ White' : '♚ Black'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="section-title">Choose your opponent</p>
+        <div className="mode-grid" style={{ marginBottom: 22 }}>
+          {LEVELS.map((l, i) => (
+            <button key={i} className="mode-card" onClick={() => setLevel(i)}
+              style={{ borderColor: level === i ? 'var(--accent)' : 'var(--border)', background: level === i ? 'var(--surface-2)' : 'var(--surface)' }}
+              aria-pressed={level === i}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="icon" aria-hidden="true">{l.emoji}</span>
+                <span className="pill pill-blue">~{l.elo}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginTop: 4 }}>{l.persona}</div>
+              <div className="tiny-label" style={{ color: level === i ? 'var(--accent)' : 'var(--muted-2)' }}>{l.label}</div>
+              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{l.desc}</div>
+            </button>
+          ))}
+        </div>
+
+        <button className="btn-success" style={{ padding: '14px 28px', fontSize: 16 }} onClick={startGame}>
+          Start game vs {LEVELS[level].persona} →
+        </button>
       </div>
     )
   }
@@ -670,6 +674,7 @@ export default function Engine() {
               onJump={setReviewPly}
               onFlip={() => setFlipped(f => !f)}
               onNewGame={newGame}
+              onNav={onNav}
             />
           ) : (
             <>
