@@ -157,3 +157,67 @@ export const OPENINGS = [
     ],
   },
 ]
+
+// Optional coaching notes per opening (merged in by the Opening Trainer UI).
+export const OPENING_NOTES = {
+  'italian': {
+    difficulty: 'Beginner',
+    mainIdea: 'Develop quickly and pressure the f7 square.',
+    plans: ['Control the centre with e4 and pieces.', 'Develop the bishop to c4, eyeing f7.', 'Castle early.', 'Look for tactics against f7.'],
+    commonMistakes: ['Moving the queen out too early.', 'Ignoring threats to the e4 pawn.', 'Delaying castling.'],
+  },
+  'ruy-lopez': {
+    difficulty: 'Intermediate',
+    mainIdea: 'Pressure the knight that defends e5 and build a big centre.',
+    plans: ['Pin the c6-knight with Bb5.', 'Castle and play c3/d4 for a strong centre.', 'Reroute the bishop to safety with a4–b3.'],
+    commonMistakes: ['Grabbing the e5 pawn too early.', 'Letting Black equalise with easy development.'],
+  },
+  'sicilian': {
+    difficulty: 'Advanced',
+    mainIdea: 'Fight for the centre asymmetrically and counter-attack.',
+    plans: ['Trade the c-pawn for the d-pawn.', 'Develop with tempo and grab queenside space.', 'Counter-attack rather than defend passively.'],
+    commonMistakes: ['Playing too passively as Black.', 'As White, castling into an unprepared attack.'],
+  },
+  'queens-gambit': {
+    difficulty: 'Intermediate',
+    mainIdea: 'Pressure d5 to gain a central and space advantage.',
+    plans: ['Pressure d5 with c4 and Nc3.', 'Develop the bishop to g5 to add pressure.', 'Aim for a queenside pawn majority.'],
+    commonMistakes: ['Thinking the gambit pawn is a real sacrifice.', 'Releasing the central tension too soon.'],
+  },
+  'london': {
+    difficulty: 'Beginner',
+    mainIdea: 'A solid, easy-to-learn setup you can play against almost anything.',
+    plans: ['Develop the bishop to f4 outside the pawn chain.', 'Build the pawn triangle c3–d4–e3.', 'Castle and play for e4 or a kingside attack.'],
+    commonMistakes: ['Leaving the b2 pawn hanging.', 'Playing on autopilot and missing tactics.'],
+  },
+  'caro-kann': {
+    difficulty: 'Intermediate',
+    mainIdea: 'Challenge the centre with …d5 while keeping a solid structure.',
+    plans: ['Support …d5 with the c6 pawn.', 'Develop the light-squared bishop before …e6.', 'Aim for a safe, sound endgame.'],
+    commonMistakes: ['Locking in the c8-bishop with an early …e6.', 'Falling behind in development.'],
+  },
+  'kings-indian': {
+    difficulty: 'Advanced',
+    mainIdea: 'Give up the centre, then storm the kingside with pawns.',
+    plans: ['Fianchetto the bishop to g7.', 'Castle, then strike with …e5 or …f5.', 'Launch a kingside pawn storm.'],
+    commonMistakes: ['Opening the centre while behind in development.', 'Forgetting to challenge White’s big centre.'],
+  },
+  'french': {
+    difficulty: 'Intermediate',
+    mainIdea: 'Build a solid chain and undermine White’s centre with …c5.',
+    plans: ['Challenge the centre with …c5 and …f6.', 'Find a good plan for the c8-bishop.', 'Play on the queenside where you have space.'],
+    commonMistakes: ['Leaving the light-squared bishop permanently passive.', 'Allowing a kingside attack while slow on the queenside.'],
+  },
+  'scotch': {
+    difficulty: 'Beginner',
+    mainIdea: 'Open the centre early for fast, natural development.',
+    plans: ['Open the centre with d4.', 'Centralise the knight on d4.', 'Develop quickly and castle.'],
+    commonMistakes: ['Chasing the centralised knight with tempo-losing moves.', 'Neglecting development for early pawn grabs.'],
+  },
+  'english': {
+    difficulty: 'Advanced',
+    mainIdea: 'Fight for the centre from the flank — a reversed Sicilian.',
+    plans: ['Stake a claim with c4 and a g3 fianchetto.', 'Pressure d5 along the long diagonal.', 'Play flexibly and transpose when it suits you.'],
+    commonMistakes: ['Treating it like 1.e4 and over-committing.', 'Leaving the centre undefined for too long.'],
+  },
+}
