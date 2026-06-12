@@ -5,6 +5,7 @@ import { ALL_LESSONS } from '../data/lessons.js'
 import StatCard from '../components/StatCard.jsx'
 import CoachPanel from '../components/CoachPanel.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
+import { evaluateAchievements } from '../utils/achievements.js'
 
 const ALL_THEMES = [...new Set(PUZZLES.map(p => p.theme))]
 const LEVEL_THRESHOLD = 0.75
@@ -168,6 +169,29 @@ export default function Progress({ onNav }) {
         <p className="section-title">Theme mastery</p>
         {sorted.map(({ theme, bucket, rate }) => <ThemeBar key={theme} theme={theme} bucket={bucket} rate={rate} />)}
       </section>
+
+      {/* Achievements */}
+      {(() => {
+        const achs = evaluateAchievements(stats)
+        const got = achs.filter(a => a.unlocked).length
+        return (
+          <section>
+            <p className="section-title">Achievements · {got} / {achs.length}</p>
+            <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+              {achs.map(a => (
+                <div key={a.id} className="card" style={{ padding: 14, opacity: a.unlocked ? 1 : 0.5, borderColor: a.unlocked ? 'rgba(242,201,76,0.4)' : 'var(--border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 24, filter: a.unlocked ? 'none' : 'grayscale(1)' }} aria-hidden="true">{a.icon}</span>
+                    {a.unlocked && <span className="pill pill-gold">✓</span>}
+                  </div>
+                  <span style={{ fontWeight: 700, fontSize: 13 }}>{a.name}</span>
+                  <span className="muted" style={{ fontSize: 12 }}>{a.desc}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      })()}
 
       {/* Reset (de-emphasised) */}
       <div>

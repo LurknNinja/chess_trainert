@@ -17,6 +17,7 @@ const DEFAULTS = {
   showLastMove: true,
   highlightCheck: true,
   animationMs: 200,
+  coachLevel: 'intermediate', // 'beginner' | 'intermediate' | 'advanced'
 }
 
 function load() {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
 import Board from '../components/Board.jsx'
+import CoachPanel from '../components/CoachPanel.jsx'
 import { useStockfish } from '../hooks/useStockfish.js'
 import { ENDGAMES } from '../data/endgames.js'
 import { playMoveSound } from '../utils/sound.js'
@@ -126,54 +127,77 @@ export default function Endgames() {
   }, [fen, thinking, endgame.color, computeStatus])
 
   const game = new Chess(fen)
+  const over = game.isGameOver()
+  const won = game.isCheckmate() && (game.turn() !== (endgame.color === 'white' ? 'w' : 'b'))
+  const target = endgame.targetMoves
+
+  // Result feedback once the position is decided.
+  let result = null
+  if (over) {
+    if (won) result = (target && moveCount > target)
+      ? { tone: 'warning', icon: '👍', title: 'Good finish!', text: `Checkmate in ${moveCount} moves. Try again and beat the target of ${target}.` }
+      : { tone: 'good', icon: '🏆', title: 'Excellent technique!', text: `Checkmate in ${moveCount} moves${target ? ` (target ${target})` : ''}.` }
+    else result = { tone: 'warning', icon: '½', title: 'Drawn', text: 'Review the technique checklist and try again — precision matters here.' }
+  }
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>Endgame Trainer</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>Practice essential endgame positions.</p>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="page-header"><h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Endgame Trainer</h1>
+        <p className="page-subtitle">Practice the techniques that turn winning positions into wins.</p></div>
+
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, marginBottom: 18 }}>
         {ENDGAMES.map((e, i) => (
-          <button key={e.id} onClick={() => loadEndgame(i)}
-            style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, background: idx === i ? '#4f8ef7' : '#2a2a4a', color: idx === i ? '#fff' : '#aaa' }}>
-            {e.name}
+          <button key={e.id} onClick={() => loadEndgame(i)} className="card-hover"
+            style={{ flex: '0 0 auto', width: 150, textAlign: 'left', padding: 14, borderRadius: 'var(--radius-md)',
+              background: idx === i ? 'var(--surface-2)' : 'var(--surface)', border: `1px solid ${idx === i ? 'var(--accent)' : 'var(--border)'}`,
+              display: 'flex', flexDirection: 'column', gap: 6, minHeight: 44 }} aria-pressed={idx === i}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{e.name}</span>
+            {e.difficulty && <span className="pill pill-muted" style={{ alignSelf: 'flex-start' }}>{e.difficulty}</span>}
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-        <div style={{ width: 480, maxWidth: '100%' }}>
-          <Board
-            position={fen}
-            orientation={endgame.color}
-            onDrop={onDrop}
-            allowDragging={!thinking && !game.isGameOver()}
-            arrows={hintArrow}
-            id="endgames"
-          />
+
+      <div className="layout-two-col">
+        <div className="layout-board">
+          <Board position={fen} orientation={endgame.color} onDrop={onDrop} allowDragging={!thinking && !over} arrows={hintArrow} id="endgames" />
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center' }}>
+            <span className="pill pill-muted">Moves: {moveCount}{target ? ` / ${target} target` : ''}</span>
+            {thinking && <span className="pill pill-blue">Engine thinking…</span>}
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={{ background: '#16213e', borderRadius: 10, padding: 20, marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{endgame.name}</p>
-            <p style={{ color: '#aaa', fontSize: 13, marginBottom: 12 }}>{endgame.goal}</p>
-            {statusMsg && (
-              <p style={{ fontWeight: 600, marginBottom: 8, color: game.isCheckmate() ? '#34c37a' : game.isDraw() ? '#f0c040' : '#4f8ef7' }}>
-                {statusMsg}
-              </p>
-            )}
-            {thinking && <p style={{ color: '#f0c040', fontSize: 13 }}>Engine thinking…</p>}
-            <p style={{ fontSize: 12, color: '#555', marginTop: 8 }}>Moves: {moveCount}</p>
-            {showHint && (
-              <p style={{ marginTop: 12, padding: 10, background: '#0d1b2a', borderRadius: 6, fontSize: 13, color: '#a0c4ff' }}>
-                💡 {endgame.hint}
-              </p>
-            )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {result
+            ? <CoachPanel tone={result.tone} icon={result.icon} eyebrow="Result" title={result.title}>{result.text}</CoachPanel>
+            : <CoachPanel tone="info" icon="♔" eyebrow={`${endgame.name}${endgame.difficulty ? ` · ${endgame.difficulty}` : ''}`} title={endgame.goal}>
+                <p>{statusMsg || 'Make your move.'}</p>
+                {showHint && <p style={{ marginTop: 8 }}><strong style={{ color: 'var(--gold)' }}>Hint:</strong> {endgame.hint}</p>}
+              </CoachPanel>}
+
+          {endgame.technique && (
+            <div className="panel">
+              <p className="section-title" style={{ color: 'var(--accent)' }}>Technique checklist</p>
+              <ol style={{ margin: '0 0 0 18px', color: 'var(--text-soft)', fontSize: 13, lineHeight: 1.7 }}>
+                {endgame.technique.map((t, i) => <li key={i}>{t}</li>)}
+              </ol>
+            </div>
+          )}
+
+          <div className="button-row">
+            <button className="btn-secondary" onClick={() => loadEndgame(idx)}>{over ? 'Try again' : 'Reset'}</button>
+            <button className="btn-gold" onClick={toggleHint} disabled={over}>{showHint ? 'Hide hint' : 'Hint'}</button>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn-secondary" onClick={() => loadEndgame(idx)}>Reset</button>
-            <button className="btn-secondary" onClick={toggleHint}>
-              {showHint ? 'Hide Hint' : 'Hint'}
-            </button>
-          </div>
-          {engineError && <p style={{ marginTop: 12, color: '#e05454', fontSize: 12 }}>Engine unavailable: {engineError}</p>}
+
+          {endgame.commonMistakes && (
+            <details>
+              <summary style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 13, padding: '4px 0' }}>Common mistakes</summary>
+              <ul style={{ margin: '8px 0 0 18px', color: 'var(--text-soft)', fontSize: 13, lineHeight: 1.6 }}>
+                {endgame.commonMistakes.map((m, i) => <li key={i} style={{ marginBottom: 4 }}>{m}</li>)}
+              </ul>
+            </details>
+          )}
+
+          {engineError && <p style={{ color: 'var(--danger)', fontSize: 12 }}>Engine unavailable: {engineError}</p>}
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Chess } from 'chess.js'
 import Board from '../components/Board.jsx'
-import { OPENINGS } from '../data/openings.js'
+import CoachPanel from '../components/CoachPanel.jsx'
+import ProgressBar from '../components/ProgressBar.jsx'
+import { OPENINGS, OPENING_NOTES } from '../data/openings.js'
 import { playMoveSound, sound } from '../utils/sound.js'
 
 function uciToMove(uci) {
@@ -11,8 +13,6 @@ function uciToMove(uci) {
 function buildPositions(opening) {
   const positions = []
   const g = new Chess()
-  // descriptions[i] annotates move i; the start gets a generic label so the
-  // final move's note is never dropped.
   positions.push({ fen: g.fen(), description: 'Starting position. Step through the moves →' })
   for (let i = 0; i < opening.moves.length; i++) {
     g.move(uciToMove(opening.moves[i]))
@@ -22,6 +22,7 @@ function buildPositions(opening) {
 }
 
 const START_FEN = new Chess().fen()
+const DRILL_HINTS = ['Hint: the plan', 'Hint: which piece', 'Hint: show the move']
 
 export default function Openings() {
   const [openingIdx, setOpeningIdx] = useState(0)
@@ -31,143 +32,121 @@ export default function Openings() {
   const [drillFen, setDrillFen] = useState(START_FEN)
   const [drillStep, setDrillStep] = useState(0)
   const [drillMsg, setDrillMsg] = useState('')
-  const [showArrow, setShowArrow] = useState(false)
+  const [drillBad, setDrillBad] = useState(false)
+  const [drillHint, setDrillHint] = useState(0)
   const [trainerThinking, setTrainerThinking] = useState(false)
 
   const opening = OPENINGS[openingIdx]
+  const notes = OPENING_NOTES[opening.id] || {}
 
   function selectOpening(i) {
-    const o = OPENINGS[i]
     setOpeningIdx(i)
-    setPositions(buildPositions(o))
-    setPosIdx(0)
-    setMode('learn')
-    setDrillFen(START_FEN)
-    setDrillStep(0)
-    setDrillMsg('')
-    setShowArrow(false)
-    setTrainerThinking(false)
+    setPositions(buildPositions(OPENINGS[i]))
+    setPosIdx(0); setMode('learn')
+    setDrillFen(START_FEN); setDrillStep(0); setDrillMsg(''); setDrillBad(false); setDrillHint(0); setTrainerThinking(false)
   }
 
   function startDrill() {
-    setMode('drill')
-    setDrillFen(START_FEN)
-    setDrillStep(0)
-    setDrillMsg(`You play ${opening.color}.`)
-    setShowArrow(false)
-    setTrainerThinking(false)
+    setMode('drill'); setDrillFen(START_FEN); setDrillStep(0)
+    setDrillMsg(`You play ${opening.color}. Play the opening from memory.`); setDrillBad(false); setDrillHint(0); setTrainerThinking(false)
   }
 
-  // Auto-play the trainer's moves whenever it's not the player's turn
   useEffect(() => {
-    if (mode !== 'drill') return
-    if (drillStep >= opening.moves.length) return
+    if (mode !== 'drill' || drillStep >= opening.moves.length) return
     const g = new Chess(drillFen)
     const playerTurn = opening.color === 'white' ? 'w' : 'b'
-    if (g.turn() === playerTurn) return  // player's turn — nothing to do
-
-    // Trainer's turn: play the next move after a short delay
+    if (g.turn() === playerTurn) return
     setTrainerThinking(true)
     const timer = setTimeout(() => {
       const g2 = new Chess(drillFen)
       let tm
-      try {
-        tm = g2.move(uciToMove(opening.moves[drillStep]))
-      } catch {
-        setTrainerThinking(false)
-        return
-      }
+      try { tm = g2.move(uciToMove(opening.moves[drillStep])) } catch { setTrainerThinking(false); return }
       const afterStep = drillStep + 1
-      setDrillFen(g2.fen())
-      playMoveSound(tm, g2)
-      setDrillStep(afterStep)
-      setTrainerThinking(false)
-      setShowArrow(false)
-      if (afterStep >= opening.moves.length) {
-        setDrillMsg('✓ Opening complete! Well done.')
-      } else {
-        setDrillMsg('Your turn — find the right move.')
-      }
+      setDrillFen(g2.fen()); playMoveSound(tm, g2); setDrillStep(afterStep); setTrainerThinking(false); setDrillHint(0)
+      setDrillBad(false)
+      setDrillMsg(afterStep >= opening.moves.length ? '✓ Opening complete! Well done.' : 'Your turn — find the right move.')
     }, 500)
     return () => clearTimeout(timer)
   }, [mode, drillFen, drillStep, opening])
 
   const onDrillDrop = useCallback(({ sourceSquare, targetSquare }) => {
-    if (trainerThinking) return false
-    if (drillStep >= opening.moves.length) return false
+    if (trainerThinking || drillStep >= opening.moves.length) return false
     const g = new Chess(drillFen)
     const playerTurn = opening.color === 'white' ? 'w' : 'b'
     if (g.turn() !== playerTurn) return false
-
     const expected = opening.moves[drillStep]
-    const uci = sourceSquare + targetSquare
-    if (uci !== expected.slice(0, 4)) {
-      setDrillMsg(`✗ Wrong! Expected ${expected.slice(0, 2)}→${expected.slice(2, 4)}. Try again.`)
+    if (sourceSquare + targetSquare !== expected.slice(0, 4)) {
+      setDrillBad(true)
+      setDrillMsg('Not the main line. Think about the opening’s plan — or tap a hint.')
       sound.wrong()
       return false
     }
     const g2 = new Chess(drillFen)
     let pm
     try { pm = g2.move(uciToMove(expected)) } catch { return false }
-
     const nextStep = drillStep + 1
-    setDrillFen(g2.fen())
-    playMoveSound(pm, g2)
-    setDrillStep(nextStep)
-    setShowArrow(false)
-
-    if (nextStep >= opening.moves.length) {
-      setDrillMsg('✓ Opening complete! Well done.')
-    } else {
-      setDrillMsg('✓ Correct!')
-    }
+    setDrillFen(g2.fen()); playMoveSound(pm, g2); setDrillStep(nextStep); setDrillHint(0); setDrillBad(false)
+    setDrillMsg(nextStep >= opening.moves.length ? '✓ Opening complete! Well done.' : '✓ Correct!')
     return true
   }, [drillFen, drillStep, opening, trainerThinking])
 
-  // Arrow for learn mode: show next move from current position
-  const learnArrow = posIdx < positions.length - 1 && opening.moves[posIdx]
-    ? [{ startSquare: opening.moves[posIdx].slice(0, 2), endSquare: opening.moves[posIdx].slice(2, 4), color: '#4f8ef7' }]
-    : []
-
-  // Arrow for drill mode: show hint for the player's current expected move
   const playerTurn = opening.color === 'white' ? 'w' : 'b'
-  const drillArrow = showArrow && drillStep < opening.moves.length && new Chess(drillFen).turn() === playerTurn
-    ? [{ startSquare: opening.moves[drillStep].slice(0, 2), endSquare: opening.moves[drillStep].slice(2, 4), color: '#f0c040' }]
-    : []
+  const isMyDrillTurn = drillStep < opening.moves.length && new Chess(drillFen).turn() === playerTurn
+  const expected = opening.moves[drillStep]
+  const drillSquares = drillHint >= 2 && isMyDrillTurn && expected ? { [expected.slice(0, 2)]: { background: 'rgba(242,201,76,0.5)', borderRadius: '50%' } } : {}
+  const drillArrow = drillHint >= 3 && isMyDrillTurn && expected ? [{ startSquare: expected.slice(0, 2), endSquare: expected.slice(2, 4), color: 'rgba(242,201,76,0.85)' }] : []
+  const learnArrow = posIdx < positions.length - 1 && opening.moves[posIdx]
+    ? [{ startSquare: opening.moves[posIdx].slice(0, 2), endSquare: opening.moves[posIdx].slice(2, 4), color: 'var(--accent)' }] : []
+
+  // ── Opening picker (compact cards) ──────────────────────────────────────────
+  const Picker = () => (
+    <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, marginBottom: 18 }}>
+      {OPENINGS.map((o, i) => {
+        const active = openingIdx === i
+        const n = OPENING_NOTES[o.id] || {}
+        return (
+          <button key={o.id} onClick={() => selectOpening(i)} className="card-hover"
+            style={{ flex: '0 0 auto', width: 150, textAlign: 'left', padding: 14, borderRadius: 'var(--radius-md)',
+              background: active ? 'var(--surface-2)' : 'var(--surface)', border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+              display: 'flex', flexDirection: 'column', gap: 6, minHeight: 44 }} aria-pressed={active}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{o.name}</span>
+            <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              <span className={`pill ${o.color === 'white' ? 'pill-muted' : 'pill-blue'}`}>{o.color}</span>
+              {n.difficulty && <span className="pill pill-muted">{n.difficulty}</span>}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
 
   if (mode === 'drill') {
     const isDone = drillStep >= opening.moves.length
     return (
       <div>
-        <h2 style={{ marginBottom: 4 }}>Opening Trainer · Drill</h2>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>{opening.name} · you play {opening.color}</p>
-        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-          <div style={{ width: 480, maxWidth: '100%' }}>
-            <Board
-              position={drillFen}
-              orientation={opening.color}
-              onDrop={onDrillDrop}
-              allowDragging={!isDone && !trainerThinking}
-              arrows={drillArrow}
-              id="opening-drill"
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <div style={{ background: '#16213e', borderRadius: 10, padding: 20, marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, marginBottom: 8 }}>{drillMsg}</p>
-              {trainerThinking && <p style={{ fontSize: 13, color: '#f0c040' }}>Trainer is playing…</p>}
-              <p style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
-                Step {Math.min(drillStep, opening.moves.length)} / {opening.moves.length}
-              </p>
+        <div className="page-header"><h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Opening Trainer · Drill</h1>
+          <p className="page-subtitle">{opening.name} — you play {opening.color}. Recall the moves from memory.</p></div>
+        <div className="layout-two-col">
+          <div className="layout-board">
+            <Board position={drillFen} orientation={opening.color} onDrop={onDrillDrop} allowDragging={!isDone && !trainerThinking} squareStyles={drillSquares} arrows={drillArrow} id="opening-drill" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+              <div style={{ flex: 1 }}><ProgressBar value={Math.min(drillStep, opening.moves.length)} max={opening.moves.length} color={isDone ? 'var(--success)' : undefined} /></div>
+              <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{Math.min(drillStep, opening.moves.length)} / {opening.moves.length}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <CoachPanel tone={isDone ? 'good' : drillBad ? 'bad' : 'info'} icon={isDone ? '🎉' : drillBad ? '💡' : '♟'}
+              eyebrow={isDone ? 'Complete' : trainerThinking ? 'Opponent moving…' : 'Your move'} title={isDone ? 'Opening complete!' : undefined}>
+              <p>{drillMsg}</p>
+              {drillHint >= 1 && !isDone && notes.mainIdea && <p style={{ marginTop: 8 }}><strong style={{ color: 'var(--gold)' }}>Plan:</strong> {notes.mainIdea}</p>}
+              {isDone && notes.plans && <ul style={{ margin: '8px 0 0 18px' }}>{notes.plans.map((p, i) => <li key={i} style={{ marginBottom: 4 }}>{p}</li>)}</ul>}
+            </CoachPanel>
+            {!isDone && isMyDrillTurn && drillHint < 3 && (
+              <button className="btn-gold" style={{ width: '100%' }} onClick={() => { setDrillHint(h => h + 1); sound.click() }}>{DRILL_HINTS[drillHint]}</button>
+            )}
+            <div className="button-row">
               <button className="btn-secondary" onClick={startDrill}>Restart</button>
-              <button className="btn-secondary" onClick={() => setMode('learn')}>Back to Learn</button>
-              {!isDone && !trainerThinking && (
-                <button className="btn-secondary" onClick={() => setShowArrow(h => !h)}>
-                  {showArrow ? 'Hide Hint' : 'Hint'}
-                </button>
-              )}
+              <button className="btn-secondary" onClick={() => setMode('learn')}>Back to learn</button>
             </div>
           </div>
         </div>
@@ -177,42 +156,42 @@ export default function Openings() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>Opening Trainer</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>Learn and drill chess openings.</p>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        {OPENINGS.map((o, i) => (
-          <button key={o.id} onClick={() => selectOpening(i)}
-            style={{ padding: '6px 14px', borderRadius: 6, fontSize: 13, background: openingIdx === i ? '#4f8ef7' : '#2a2a4a', color: openingIdx === i ? '#fff' : '#aaa' }}>
-            {o.name}
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-        <div style={{ width: 480, maxWidth: '100%' }}>
-          <Board
-            position={positions[posIdx]?.fen}
-            orientation={opening.color}
-            allowDragging={false}
-            interactive={false}
-            arrows={learnArrow}
-            id="opening-learn"
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={{ background: '#16213e', borderRadius: 10, padding: 20, marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{opening.name}</p>
-            <p style={{ color: '#aaa', fontSize: 14, lineHeight: 1.6 }}>
-              {positions[posIdx]?.description}
-            </p>
-            <p style={{ marginTop: 12, color: '#555', fontSize: 12 }}>Move {posIdx} / {positions.length - 1}</p>
+      <div className="page-header"><h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Opening Trainer</h1>
+        <p className="page-subtitle">Learn the ideas behind your openings, then drill the moves.</p></div>
+      <Picker />
+      <div className="layout-two-col">
+        <div className="layout-board">
+          <Board position={positions[posIdx]?.fen} orientation={opening.color} allowDragging={false} interactive={false} arrows={learnArrow} id="opening-learn" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+            <div style={{ flex: 1 }}><ProgressBar value={posIdx} max={positions.length - 1} /></div>
+            <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>Move {posIdx} / {positions.length - 1}</span>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div className="button-row" style={{ marginTop: 12 }}>
             <button className="btn-secondary" onClick={() => setPosIdx(Math.max(0, posIdx - 1))} disabled={posIdx === 0}>← Prev</button>
             <button className="btn-primary" onClick={() => setPosIdx(Math.min(positions.length - 1, posIdx + 1))} disabled={posIdx === positions.length - 1}>Next →</button>
+            <button className="btn-success" onClick={startDrill}>Drill this opening</button>
           </div>
-          <button className="btn-success" style={{ width: '100%' }} onClick={startDrill}>
-            Drill This Opening
-          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <CoachPanel tone="info" icon="📖" eyebrow={`${opening.name}${notes.difficulty ? ` · ${notes.difficulty}` : ''}`} title={notes.mainIdea}>
+            <p>{positions[posIdx]?.description}</p>
+          </CoachPanel>
+          {notes.plans && (
+            <div className="panel">
+              <p className="section-title" style={{ color: 'var(--accent)' }}>Plans for {opening.color}</p>
+              <ul style={{ margin: '0 0 0 18px', color: 'var(--text-soft)', fontSize: 13, lineHeight: 1.6 }}>
+                {notes.plans.map((p, i) => <li key={i} style={{ marginBottom: 4 }}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+          {notes.commonMistakes && (
+            <div className="panel">
+              <p className="section-title" style={{ color: 'var(--danger)' }}>Common mistakes</p>
+              <ul style={{ margin: '0 0 0 18px', color: 'var(--text-soft)', fontSize: 13, lineHeight: 1.6 }}>
+                {notes.commonMistakes.map((m, i) => <li key={i} style={{ marginBottom: 4 }}>{m}</li>)}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -36,16 +36,34 @@ const SPEEDS = [
   { label: 'Slow', ms: 350 },
 ]
 
+const COACH_LEVELS = [
+  { id: 'beginner', label: 'Beginner', desc: 'Plain language, no jargon.' },
+  { id: 'intermediate', label: 'Intermediate', desc: 'Tactics and plans.' },
+  { id: 'advanced', label: 'Advanced', desc: 'Full chess terms.' },
+]
+
 export default function Settings() {
   const s = useSettings()
   const [soundOn, setSoundOn] = useState(isSoundEnabled())
 
   return (
     <div style={{ maxWidth: 560 }}>
-      <h2 style={{ marginBottom: 6 }}>Settings</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>Personalise the board and gameplay. Saved on this device.</p>
+      <div className="page-header"><h1 className="page-title" style={{ fontSize: 'var(--fs-xl)' }}>Settings</h1>
+        <p className="page-subtitle">Personalise the board and coaching. Saved on this device.</p></div>
 
-      <h3 style={{ fontSize: 13, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Board Theme</h3>
+      <p className="section-title">Coaching level</p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+        {COACH_LEVELS.map(cl => (
+          <button key={cl.id} onClick={() => setSettings({ coachLevel: cl.id })}
+            className={s.coachLevel === cl.id ? 'btn-primary' : 'btn-secondary'}
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '10px 16px', minHeight: 56 }}>
+            <span style={{ fontWeight: 700 }}>{cl.label}</span>
+            <span style={{ fontSize: 11, opacity: 0.85, fontWeight: 500 }}>{cl.desc}</span>
+          </button>
+        ))}
+      </div>
+
+      <p className="section-title">Board theme</p>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
         {Object.entries(THEMES).map(([key, t]) => (
           <button key={key} onClick={() => setSettings({ theme: key })}
@@ -63,12 +81,12 @@ export default function Settings() {
         ))}
       </div>
 
-      <h3 style={{ fontSize: 13, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Board Help</h3>
+      <p className="section-title">Board Help</p>
       <Toggle label="Show legal moves" desc="Tap a piece to see where it can move." value={s.showLegalMoves} onChange={v => setSettings({ showLegalMoves: v })} />
       <Toggle label="Highlight last move" desc="Mark the squares of the most recent move." value={s.showLastMove} onChange={v => setSettings({ showLastMove: v })} />
       <Toggle label="Highlight checks" desc="Flag the king when it is in check." value={s.highlightCheck} onChange={v => setSettings({ highlightCheck: v })} />
 
-      <h3 style={{ fontSize: 13, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '24px 0 12px' }}>Animation Speed</h3>
+      <p className="section-title" style={{ marginTop: 24 }}>Animation Speed</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
         {SPEEDS.map(sp => (
           <button key={sp.ms} onClick={() => setSettings({ animationMs: sp.ms })}
@@ -78,7 +96,7 @@ export default function Settings() {
         ))}
       </div>
 
-      <h3 style={{ fontSize: 13, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Sound</h3>
+      <p className="section-title">Sound</p>
       <Toggle label="Sound effects" desc="Moves, captures, checks, and results." value={soundOn}
         onChange={v => { setSoundEnabled(v); setSoundOn(v); if (v) sound.click() }} />
     </div>
