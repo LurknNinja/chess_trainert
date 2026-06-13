@@ -3,6 +3,7 @@ import { isSoundEnabled, setSoundEnabled, sound } from '../utils/sound.js'
 
 const LINKS = [
   { id: 'learn',    label: 'Learn' },
+  { id: 'guided',   label: 'Guided' },
   { id: 'puzzles',  label: 'Puzzles' },
   { id: 'rush',     label: 'Rush' },
   { id: 'engine',   label: 'Play' },
