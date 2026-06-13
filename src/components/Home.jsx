@@ -5,6 +5,7 @@ import StatCard from './StatCard.jsx'
 
 const MODES = [
   { id: 'learn',    icon: '🎓', title: 'Learn Chess',     desc: 'Interactive lessons and guided board drills.',        badge: 'All levels', action: 'Start learning' },
+  { id: 'guided',   icon: '🧭', title: 'Guided Games',    desc: 'Move-by-move training that explains what to play and why.', badge: 'Beginner', action: 'Start walkthrough' },
   { id: 'puzzles',  icon: '🧩', title: 'Puzzles',         desc: 'Build tactical vision with rated puzzles.',           badge: 'Rated',      action: 'Solve puzzles' },
   { id: 'rush',     icon: '⚡', title: 'Puzzle Rush',      desc: 'Fast tactics under pressure — beat your best.',       badge: '3 min',      action: 'Start rush' },
   { id: 'engine',   icon: '🤖', title: 'Play vs Engine',  desc: 'Play Stockfish, then review your mistakes.',          badge: '5 bots',     action: 'Play a game' },
