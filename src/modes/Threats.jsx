@@ -45,7 +45,7 @@ export default function Threats() {
   const onDrop = useCallback(({ sourceSquare, targetSquare }) => {
     if (phase !== 'move') return false
     const g = new Chess(fen)
-    let m; try { m = g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
+    try { g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { return false }
     if (t.answerId === 'none' || threatDefused(g, t.threatMove, isMate)) {
       setFen(g.fen()); sound.win(); setPhase('done'); return true
     }

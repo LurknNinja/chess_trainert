@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Validate content (legality + metadata)
+        run: |
+          npm run validate:puzzles
+          npm run validate:guided
+      - name: Validate content with Stockfish (correctness)
+        # The engine is the source of truth: every puzzle solution and guided
+        # line is checked for soundness so a wrong move can never ship again.
+        run: npm run validate:engine

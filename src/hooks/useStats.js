@@ -1,5 +1,7 @@
+import { schedule, gradeFromResult, dueCards, newCard } from '../utils/srs.js'
+
 const STORAGE_KEY = 'chess_trainer_stats'
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 export const START_RATING = 800
 
@@ -15,7 +17,8 @@ function defaultState() {
     games: { wins: 0, losses: 0, draws: 0 },
     lessonsCompleted: {},   // { lessonId: true }
     rushBest: 0,            // best Puzzle Rush score
-    missed: {},            // { puzzleId: true } — puzzles to review (spaced repetition)
+    missed: {},            // { puzzleId: true } — puzzles flagged for review (UI badge)
+    review: {},            // { puzzleId: srsCard } — spaced-repetition schedule
   }
 }
 
@@ -34,6 +37,7 @@ function migrate(parsed) {
     lessonsCompleted: (parsed.lessonsCompleted && typeof parsed.lessonsCompleted === 'object') ? parsed.lessonsCompleted : {},
     rushBest: typeof parsed.rushBest === 'number' ? parsed.rushBest : 0,
     missed: (parsed.missed && typeof parsed.missed === 'object') ? parsed.missed : {},
+    review: (parsed.review && typeof parsed.review === 'object') ? parsed.review : {},
   }
 }
 
@@ -78,12 +82,18 @@ export function recordAttempt(theme, { solved, firstTry, hintsUsed, puzzleRating
   b.hintsUsed += (hintsUsed ?? 0)
   data.themeStats[theme] = b
 
-  // Spaced-repetition queue: a clean first-try solve clears a puzzle; any
-  // failure (or solving only after a wrong move) marks it for later review.
+  // Spaced-repetition scheduling. The `missed` map drives the simple review
+  // badge; the `review` map holds the real SM-2 schedule (ease + due date) so
+  // the review queue resurfaces puzzles exactly when they're worth redoing.
   if (puzzleId != null) {
     data.missed = data.missed || {}
     if (solved && firstTry) delete data.missed[puzzleId]
     else if (!solved || !firstTry) data.missed[puzzleId] = true
+
+    data.review = data.review || {}
+    const grade = gradeFromResult({ solved, firstTry, hintsUsed })
+    const prev = data.review[puzzleId] || newCard(puzzleId)
+    data.review[puzzleId] = schedule(prev, grade, Date.now())
   }
 
   // Rating + streak only move on a genuine attempt with a known puzzle rating.
@@ -141,6 +151,11 @@ export function recordLesson(lessonId) {
 
 export function getStats() {
   return load()
+}
+
+// Puzzle ids whose spaced-repetition card is due for review, soonest first.
+export function getDueReviews(now = Date.now()) {
+  return dueCards(load().review, now).map((c) => c.id)
 }
 
 export function clearStats() {
