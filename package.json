@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "validate:puzzles": "node scripts/validatePuzzles.js"
+    "validate:puzzles": "node scripts/validatePuzzles.js",
+    "validate:guided": "node scripts/validateGuided.js"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
