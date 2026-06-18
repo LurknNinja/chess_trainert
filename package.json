@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "validate:puzzles": "node scripts/validatePuzzles.js",
-    "validate:guided": "node scripts/validateGuided.js"
+    "validate:guided": "node scripts/validateGuided.js",
+    "validate:engine": "node scripts/validateEngine.mjs",
+    "validate": "npm run validate:puzzles && npm run validate:guided && npm run validate:engine",
+    "test": "vitest run"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
@@ -27,6 +30,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vitest": "^2.1.9"
   }
 }

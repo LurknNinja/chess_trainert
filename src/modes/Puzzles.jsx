@@ -3,7 +3,7 @@ import { Chess } from 'chess.js'
 import Board from '../components/Board.jsx'
 import CoachPanel from '../components/CoachPanel.jsx'
 import { PUZZLES as LOCAL_PUZZLES } from '../data/puzzles.js'
-import { recordAttempt, getStats } from '../hooks/useStats.js'
+import { recordAttempt, getStats, getDueReviews } from '../hooks/useStats.js'
 import { sound } from '../utils/sound.js'
 
 function uciToMove(uci) {
@@ -169,7 +169,11 @@ export default function Puzzles({ onNav, initialTrainMode = false, initialReview
     const missed = getStats().missed || {}
     const pool = allPuzzles.filter(p => !p.daily && missed[p.id])
     if (!pool.length) { setReviewMode(false); pickNext(); return }
-    const next = pool[Math.floor(Math.random() * pool.length)]
+    // Spaced repetition: show the most-overdue card first; the due order
+    // already encodes how badly each puzzle needs another attempt.
+    const dueOrder = getDueReviews()
+    const due = dueOrder.map(id => pool.find(p => p.id === id)).filter(Boolean)
+    const next = due[0] || pool[Math.floor(Math.random() * pool.length)]
     loadPuzzle(allPuzzles.indexOf(next))
   }
 

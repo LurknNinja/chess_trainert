@@ -69,10 +69,10 @@ export const PUZZLES = [
     description: 'White to move. Back-rank mate — the king is trapped by its own pawns.',
   },
   {
-    id: 12, theme: 'Pin', rating: 1200,
-    fen: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 2 5',
-    moves: ['c4f7'],
-    description: 'White to move. The f7 pawn is pinned — exploit it.',
+    id: 12, theme: 'Pin', rating: 1000,
+    fen: '4k3/8/8/4n3/8/8/8/4R1K1 w - - 0 1',
+    moves: ['e1e5'],
+    description: 'White to move. The knight is pinned to the king and cannot flee — capture it.',
   },
   {
     id: 13, theme: 'Checkmate in 1', rating: 700,
@@ -148,15 +148,15 @@ export const PUZZLES = [
   },
   {
     id: 25, theme: 'Back Rank', rating: 850,
-    fen: '5rk1/5pp1/7p/8/8/8/5PP1/4RRK1 w - - 0 1',
-    moves: ['e1e8'],
-    description: 'White to move. Break through the back rank.',
+    fen: '6k1/5ppp/8/8/8/8/8/1R4K1 w - - 0 1',
+    moves: ['b1b8'],
+    description: 'White to move. The king is boxed in by its own pawns — deliver back-rank mate.',
   },
   {
     id: 26, theme: 'Fork', rating: 1000,
-    fen: 'r1bk1b1r/ppp2ppp/8/3Np3/4P3/8/PPP2PPP/R1B1KB1R w KQ - 0 1',
-    moves: ['d5b6'],
-    description: 'White to move. Knight forks king and rook.',
+    fen: '2r3k1/8/8/3N4/8/8/P7/6K1 w - - 0 1',
+    moves: ['d5e7'],
+    description: 'White to move. A knight fork — check the king and win the rook.',
   },
   {
     id: 27, theme: 'Checkmate in 1', rating: 650,
@@ -233,9 +233,9 @@ export const PUZZLES = [
   },
   {
     id: 39, theme: 'Double Attack', rating: 1250,
-    fen: '1r4k1/8/8/8/7Q/8/8/6K1 w - - 0 1',
-    moves: ['h4d8'],
-    description: 'White to move. Check the king and win the loose rook on the same move.',
+    fen: 'r5k1/8/8/8/8/8/8/3Q2K1 w - - 0 1',
+    moves: ['d1d5'],
+    description: 'White to move. One queen move checks the king and attacks the loose rook at the same time.',
   },
   {
     id: 40, theme: 'Smothered Mate', rating: 1150,
