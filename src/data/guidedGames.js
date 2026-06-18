@@ -18,17 +18,18 @@
 //   Endgame Conversion · Grandmaster Thinking
 // New walkthroughs just add another object below with the same shape.
 
-// Both starter walkthroughs follow the same legal, classic miniature (Légal's
-// Mate). White develops naturally; Black grabs material instead of getting the
-// king safe, and is checkmated in the centre — a vivid lesson in king safety.
+// Both starter walkthroughs follow the same sound, principled opening (the
+// Italian Game / Giuoco Pianissimo). Every player move is a healthy developing
+// move — there are no sacrifices or trick moves — so beginners learn good
+// habits: control the centre, develop your pieces, and castle your king to
+// safety.
 const LINE = [
   { move: 'e2e4', reply: 'e7e5' },
   { move: 'g1f3', reply: 'b8c6' },
-  { move: 'f1c4', reply: 'd7d6' },
-  { move: 'b1c3', reply: 'c8g4' },
-  { move: 'f3e5', reply: 'g4d1' },
-  { move: 'c4f7', reply: 'e8e7' },
-  { move: 'c3d5', reply: null },
+  { move: 'f1c4', reply: 'f8c5' },
+  { move: 'd2d3', reply: 'd7d6' },
+  { move: 'b1c3', reply: 'g8f6' },
+  { move: 'e1g1', reply: 'e8g8' },
 ]
 const hl = (m) => [m.slice(0, 2), m.slice(2, 4)]
 const stepBase = (i) => ({ move: LINE[i].move, reply: LINE[i].reply, highlight: hl(LINE[i].move), arrow: hl(LINE[i].move) })
@@ -36,40 +37,38 @@ const stepBase = (i) => ({ move: LINE[i].move, reply: LINE[i].reply, highlight: 
 export const GUIDED_GAMES = [
   {
     id: 'first-game',
-    title: 'Your First Complete Game',
+    title: 'Your First Opening',
     level: 'Beginner',
     style: 'Fundamentals',
-    goal: 'Learn development, king safety, simple threats, and checkmate.',
-    description: 'A move-by-move game for brand-new players.',
+    goal: 'Learn the three opening goals: control the centre, develop your pieces, and castle.',
+    description: 'A move-by-move opening for brand-new players — every move is a good move.',
     startingFen: 'start',
-    summary: 'You developed your pieces toward the centre, created threats, and punished a king that never got safe — finishing with checkmate.',
+    summary: 'You controlled the centre, developed every minor piece, and castled your king to safety — exactly how a strong game begins. From here, look for a plan and watch for tactics.',
     steps: [
-      { ...stepBase(0), title: 'Open the centre', instruction: 'Move your e-pawn two squares forward, to e4.', why: 'It grabs space in the centre and opens lines for your queen and bishop.', beginnerTip: 'The four centre squares (e4, d4, e5, d5) are prime real estate. Fight for them early.', checkpoint: 'Control the centre' },
-      { ...stepBase(1), title: 'Develop a knight', instruction: 'Bring your knight out to f3.', why: 'It develops a piece toward the centre and attacks Black’s e5 pawn.', beginnerTip: 'In the opening, try to move each piece once before moving the same piece twice.' },
-      { ...stepBase(2), title: 'Develop your bishop', instruction: 'Move your light-squared bishop to c4.', why: 'The bishop eyes f7 — the weakest square near Black’s king.', beginnerTip: 'Bishops love long, open diagonals. c4 aims straight at Black’s most vulnerable point.' },
-      { ...stepBase(3), title: 'Develop the other knight', instruction: 'Bring your queenside knight to c3.', why: 'Another piece in the game, and it eyes the d5 and e4 squares.', beginnerTip: 'You’ve now developed three pieces. Black has only moved pawns and a bishop.' },
-      { ...stepBase(4), title: 'Spring the trap', instruction: 'Take the e5 pawn with your knight (Nxe5).', why: 'It looks like you’re leaving your queen unprotected — that’s the bait! If Black grabs it, checkmate follows.', beginnerTip: 'Black’s bishop is pinning your knight, but the pin is an illusion here.', mistakeWarning: 'Black will greedily take your queen — exactly what you want.' },
-      { ...stepBase(5), title: 'Check with the bishop', instruction: 'Capture on f7 with your bishop, giving check (Bxf7+).', why: 'The king is dragged into the open, right into your developed pieces.', beginnerTip: 'Checks are forcing — your opponent must respond immediately.' },
-      { ...stepBase(6), title: 'Checkmate!', instruction: 'Deliver checkmate by jumping the knight to d5 (Nd5#).', why: 'The king is trapped in the centre with no escape — your developed pieces did all the work.', beginnerTip: 'Notice the lesson: Black never castled, so the king was mated in the middle of the board.', checkpoint: 'Checkmate' },
+      { ...stepBase(0), title: 'Open the centre', instruction: 'Move your e-pawn two squares forward, to e4.', why: 'It grabs space in the centre and opens lines for your bishop and queen.', beginnerTip: 'The four centre squares (e4, d4, e5, d5) are prime real estate — fight for them early.', checkpoint: 'Control the centre' },
+      { ...stepBase(1), title: 'Develop a knight', instruction: 'Bring your knight out to f3.', why: 'It develops a piece toward the centre and attacks Black’s e5 pawn.', beginnerTip: 'Knights belong near the middle — “a knight on the rim is dim.”' },
+      { ...stepBase(2), title: 'Develop your bishop', instruction: 'Move your light-squared bishop to c4.', why: 'The bishop takes an active diagonal and eyes Black’s f7 square.', beginnerTip: 'Try to move each piece once before moving the same piece twice.' },
+      { ...stepBase(3), title: 'Support the centre', instruction: 'Play d3.', why: 'It defends your e4 pawn and opens a path for your dark-squared bishop.', beginnerTip: 'Small, solid pawn moves like this keep your position healthy.' },
+      { ...stepBase(4), title: 'Develop the last knight', instruction: 'Bring your queenside knight to c3.', why: 'Now every minor piece is in the game and helping control the centre.', beginnerTip: 'Count your developed pieces — you’re ahead because you didn’t waste moves.' },
+      { ...stepBase(5), title: 'Castle your king to safety', instruction: 'Castle kingside (move the king to g1).', why: 'Castling tucks your king into the corner and connects your rooks. A safe king is the foundation of every good game.', beginnerTip: 'Aim to castle within your first 8–10 moves, almost every game.', checkpoint: 'King safety' },
     ],
   },
   {
     id: 'first-game-strategy',
-    title: 'The Same Game — With Strategy',
+    title: 'The Same Opening — With Strategy',
     level: 'Beginner+',
     style: 'Strategy',
-    goal: 'Understand why the centre, development, king safety, and patience matter.',
+    goal: 'Understand why the centre, development, and king safety matter — and why patience beats early attacks.',
     description: 'The same line, explained the way a coach thinks.',
     startingFen: 'start',
-    summary: 'You saw how steady development and central control build an attack — and how grabbing material instead of getting the king safe loses games.',
+    summary: 'You saw the plan behind each move: fight for the centre, develop with purpose, and get the king safe before doing anything else. Attacks come later — only once your pieces are ready.',
     steps: [
       { ...stepBase(0), title: 'Claim the centre', instruction: 'Play e4.', why: 'Whoever controls the centre controls the game — central pieces reach more squares.', strategyNote: 'We are not attacking yet. The first job in any game is to fight for the centre and free our pieces.', checkpoint: 'Control the centre' },
-      { ...stepBase(1), title: 'Develop with purpose', instruction: 'Play Nf3.', why: 'Every developing move should ideally do two things — here we develop AND hit the e5 pawn.', strategyNote: 'Good moves multitask. Look for developing moves that also create a small threat.' },
-      { ...stepBase(2), title: 'Aim at the weakness', instruction: 'Play Bc4.', why: 'f7 is only defended by Black’s king. Pointing pieces at it builds long-term pressure.', strategyNote: 'Identify your opponent’s weakest point early, then aim your pieces at it.' },
-      { ...stepBase(3), title: 'Finish development', instruction: 'Play Nc3.', why: 'Three pieces out, all working toward the centre. Black, meanwhile, has wasted time.', strategyNote: 'Count developed pieces. A lead in development is the green light to look for action.' },
-      { ...stepBase(4), title: 'Convert the lead', instruction: 'Play Nxe5.', why: 'A development lead lets you strike. The “hanging” queen is a calculated trap, not a blunder.', strategyNote: 'Tactics flow from a better position. Because we developed first, this combination works.' },
-      { ...stepBase(5), title: 'Open the king', instruction: 'Play Bxf7+.', why: 'Black’s greed (taking the queen) left the king stuck in the centre. Now we pounce.', strategyNote: 'This is the punishment for grabbing material instead of castling. Safety first, always.' },
-      { ...stepBase(6), title: 'Deliver mate', instruction: 'Play Nd5#.', why: 'Coordinated, developed pieces deliver mate against a king that never found shelter.', strategyNote: 'The whole game in one sentence: develop, control the centre, keep your king safe, then attack.', checkpoint: 'Checkmate' },
+      { ...stepBase(1), title: 'Develop with purpose', instruction: 'Play Nf3.', why: 'A good developing move often does two things — here we develop AND hit the e5 pawn.', strategyNote: 'Look for developing moves that also create a small threat. Efficiency wins games.' },
+      { ...stepBase(2), title: 'Aim your pieces', instruction: 'Play Bc4.', why: 'The bishop points at f7, Black’s most sensitive square, building quiet pressure.', strategyNote: 'Develop toward your opponent’s weaknesses, but don’t lash out yet — finish development first.' },
+      { ...stepBase(3), title: 'Build a solid base', instruction: 'Play d3.', why: 'Defending e4 keeps the centre stable so nothing falls apart while you finish developing.', strategyNote: 'Strong players make their position rock-solid before they go looking for an attack.' },
+      { ...stepBase(4), title: 'Complete development', instruction: 'Play Nc3.', why: 'Every minor piece is now active. A lead in development is what makes future attacks work.', strategyNote: 'Attacking before you’ve developed usually backfires — your pieces aren’t there to support it.' },
+      { ...stepBase(5), title: 'Safety first', instruction: 'Castle kingside.', why: 'With the king safe and rooks connected, you can finally start planning an attack.', strategyNote: 'The whole opening in one sentence: control the centre, develop everything, get your king safe — then play for the win.', checkpoint: 'King safety' },
     ],
   },
 ]
