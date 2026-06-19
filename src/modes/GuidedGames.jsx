@@ -128,6 +128,8 @@ export default function GuidedGames({ onNav }) {
                 {game.id === 'first-game' && <button className="btn-gold" onClick={() => openGame('first-game-strategy')}>Try the strategy version →</button>}
                 <button className="btn-secondary" onClick={() => onNav('puzzles')}>Go to Puzzles</button>
                 <button className="btn-secondary" onClick={() => onNav('threats')}>Find the Threat</button>
+                <button className="btn-secondary" onClick={() => onNav('openings')}>Explore Openings</button>
+                <button className="btn-secondary" onClick={() => onNav('endgames')}>Endgame Practice</button>
               </>}>
               <p>{game.summary}</p>
             </CoachPanel>
@@ -142,6 +144,9 @@ export default function GuidedGames({ onNav }) {
                       <p style={{ marginTop: 8 }}><strong style={{ color: 'var(--text)' }}>Why:</strong> {step.why}</p>
                       {step.strategyNote && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--accent)' }}>Coach:</strong> {step.strategyNote}</p>}
                       {step.beginnerTip && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--gold)' }}>Tip:</strong> {step.beginnerTip}</p>}
+                      {step.opponentPlan && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--text)' }}>Opponent:</strong> {step.opponentPlan}</p>}
+                      {step.plan && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--accent)' }}>Plan:</strong> {step.plan}</p>}
+                      {step.matePattern && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--success)' }}>Pattern:</strong> {step.matePattern}</p>}
                       {step.mistakeWarning && <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>{step.mistakeWarning}</p>}
                     </>}
               </CoachPanel>

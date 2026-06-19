@@ -80,6 +80,7 @@ async function checkPuzzles(eng) {
 async function checkGuided(eng) {
   console.log(`Engine-checking ${GUIDED_GAMES.length} guided walkthroughs…`)
   for (const game of GUIDED_GAMES) {
+    const blunderThreshold = game.engineThreshold ?? GUIDED_BLUNDER
     const board = new Chess(game.startingFen === 'start' || !game.startingFen ? undefined : game.startingFen)
     for (let i = 0; i < game.steps.length; i++) {
       const s = game.steps[i]
@@ -89,7 +90,7 @@ async function checkGuided(eng) {
         const solScore = await scoreAfter(eng, fen, s.move)
         const bestScore = await scoreAfter(eng, fen, best.bestmove)
         const drop = val(bestScore) - val(solScore)
-        if (drop > GUIDED_BLUNDER)
+        if (drop > blunderThreshold)
           err(`${game.id} step ${i + 1}: recommends ${s.move} which loses ${drop}cp vs ${best.bestmove} — not a sound teaching move`)
       }
       board.move({ from: s.move.slice(0, 2), to: s.move.slice(2, 4), promotion: s.move[4] || 'q' })
