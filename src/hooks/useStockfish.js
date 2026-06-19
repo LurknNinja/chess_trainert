@@ -7,7 +7,7 @@ export function useStockfish() {
 
   useEffect(() => {
     try {
-      worker.current = new Worker('/stockfish.js')
+      worker.current = new Worker(import.meta.env.BASE_URL + 'stockfish.js')
       worker.current.onerror = () => setEngineError('Engine failed to load')
       worker.current.onmessage = (e) => {
         handlers.current.forEach(fn => fn(e.data))
