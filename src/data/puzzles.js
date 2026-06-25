@@ -9,9 +9,9 @@ export const PUZZLES = [
   },
   {
     id: 2, theme: 'Pin', rating: 1250,
-    fen: 'rnbqk2r/ppp2ppp/4pn2/3p4/1bPP4/2N1P3/PP3PPP/R1BQKBNR w KQkq - 2 5',
-    moves: ['d1c2'],
-    description: 'White to move. Exploit the pin.',
+    fen: 'k7/8/2n5/1P6/4B3/8/8/6K1 w - - 0 1',
+    moves: ['b5c6'],
+    description: 'White to move. The bishop absolutely pins the knight — exploit it!',
   },
   {
     id: 3, theme: 'Back Rank', rating: 900,
@@ -27,9 +27,9 @@ export const PUZZLES = [
   },
   {
     id: 5, theme: 'Discovered Attack', rating: 1350,
-    fen: 'r1bqkbnr/ppp2ppp/2np4/4p3/2B1P3/2NP4/PPP2PPP/R1BQK1NR b KQkq - 0 4',
-    moves: ['c6d4'],
-    description: 'Black to move. Unleash the discovered attack.',
+    fen: '4k3/7R/6n1/5b2/8/8/8/6K1 b - - 0 1',
+    moves: ['g6f8'],
+    description: 'Black to move. The knight is blocking the bishop\'s attack — move it and win the rook.',
   },
   {
     id: 6, theme: 'Smothered Mate', rating: 1500,

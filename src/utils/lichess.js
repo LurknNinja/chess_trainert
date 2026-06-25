@@ -6,7 +6,7 @@ export function uciToMove(uci) {
 
 export function isLegalUci(fen, uci) {
   try {
-    new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' })
+    new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined })
     return true
   } catch { return false }
 }
